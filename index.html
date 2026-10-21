@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>招行PB交易台</title>
+<style>
+:root{--ink:#1a1a1a;--sub:#8a8a8e;--line:#e0e0e2;--bg:#ffffff;--blue:#0a84ff;--red:#ff3b30;--green:#34c759;--amber:#ff9500;--card:#f7f7f9}
+@media(prefers-color-scheme:dark){:root{--ink:#f2f2f5;--sub:#98989f;--line:#3a3a3c;--bg:#1c1c1e;--card:#2c2c2e}}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,"PingFang SC",sans-serif;background:var(--bg);color:var(--ink);padding:0 0 40px;font-size:17px}
+.num{font-variant-numeric:tabular-nums}
+.bar{position:sticky;top:0;z-index:9;background:var(--bg);padding:12px 16px 8px;border-bottom:1px solid var(--line)}
+.bar h1{font-size:18px;font-weight:600;display:inline}
+.badge{float:right;padding:4px 12px;border-radius:10px;font-size:14px;font-weight:600}
+.b-off{background:rgba(138,138,142,.16);color:var(--sub)}
+.b-hit{background:rgba(255,149,0,.18);color:var(--amber)}
+.wrap{padding:12px 16px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.card{background:var(--card);border-radius:14px;padding:12px 14px}
+.field{display:flex;flex-direction:column;gap:4px;flex:1;min-width:72px}
+.field label{font-size:12px;color:var(--sub)}
+input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;font-size:17px;background:var(--bg);color:var(--ink)}
+input:focus{outline:none;border-color:var(--blue)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+.stat{text-align:center;padding:12px 6px}
+.stat .v{font-size:26px;font-weight:600}
+.stat .k{font-size:12px;color:var(--sub);margin-top:2px}
+.lvl{margin-bottom:10px;display:flex;flex-direction:column;gap:8px}
+.lvl-top{display:flex;justify-content:space-between;align-items:center}
+.lvl b{font-size:16px}
+.chip{padding:3px 10px;border-radius:8px;font-size:13px}
+.on{background:rgba(52,199,89,.16);color:var(--green)}
+.off{background:rgba(138,138,142,.16);color:var(--sub)}
+.cond{font-size:13px;color:var(--sub)}
+.lvl-mid{display:flex;justify-content:space-between;align-items:baseline}
+.tprice{font-size:22px;font-weight:600}
+.dist{font-size:12px;color:var(--sub)}
+button{font:inherit;cursor:pointer;border:none;border-radius:12px;min-height:46px;font-size:16px;font-weight:600}
+.act{background:var(--ink);color:var(--bg);width:100%}
+.act:disabled{background:var(--card);color:var(--sub);font-weight:400;opacity:.55}
+.ghost{background:transparent;border:1px solid var(--line);color:var(--sub);min-height:40px;padding:0 14px;font-size:14px;font-weight:400}
+.gauge-box{margin:4px 0 2px}
+table{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
+th{font-size:12px;color:var(--sub);text-align:left;padding:5px 4px;border-bottom:1px solid var(--line)}
+td{padding:7px 4px;border-bottom:1px solid rgba(128,128,128,.15)}
+.note{color:var(--sub);font-size:12px;line-height:1.8;margin-top:12px}
+#msg{font-size:12px;color:var(--blue);min-height:18px;display:block;margin-top:4px}
+.banner{background:rgba(10,132,255,.1);color:var(--blue);border-radius:12px;padding:10px 14px;font-size:13px;line-height:1.7;margin-bottom:10px}
+.banner b{cursor:pointer;float:right;padding:0 6px}
+.sect{font-size:14px;font-weight:600;color:var(--sub);margin:16px 0 8px}
+.btnrow{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+.btnrow button{flex:1 1 30%;min-width:110px}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <h1>招行 PB 交易台</h1>
+  <span id="status" class="badge b-off">○ 观望</span>
+  <span id="msg"></span>
+</div>
+
+<div class="wrap">
+  <div class="banner" id="tip" style="display:none">建议添加到主屏幕：点 Safari 底部分享按钮 → 下滑选"添加到主屏幕"，以后一点就开。<b onclick="document.getElementById('tip').style.display='none'">✕</b></div>
+
+  <div class="gauge-box"><svg id="gauge" viewBox="0 0 360 56" style="width:100%;height:auto"></svg></div>
+
+  <div class="row" style="margin:10px 0">
+    <div class="field"><label>股价</label><input id="price" type="text" inputmode="decimal" value="42.45"></div>
+    <div class="field"><label>BVPS</label><input id="bvps" type="text" inputmode="decimal" value="43.43"></div>
+    <div class="field"><label>DPS</label><input id="dps" type="text" inputmode="decimal" value="2.016"></div>
+    <div class="field"><label>成本价(元/股)</label><input id="cost" type="text" inputmode="decimal" placeholder="每股成本"></div>
+    <div class="field"><label>持股数</label><input id="sharesInput" type="text" inputmode="decimal" value="17900"></div>
+  </div>
+  <div class="row" style="align-items:center">
+    <button class="ghost" onclick="fetchQuote()" style="flex:1">⟳ 自动获取最新行情</button>
+    <div class="field" style="max-width:90px"><label>重置线</label><input id="rearm" type="text" inputmode="decimal" value="0.90"></div>
+  </div>
+
+  <div class="stats">
+    <div class="card stat"><div class="v num" id="pb">0.98</div><div class="k">当前 PB</div></div>
+    <div class="card stat"><div class="v num" id="yld">4.75%</div><div class="k">股息率</div></div>
+    <div class="card stat"><div class="v num" id="shares">17,900</div><div class="k">持股</div></div>
+    <div class="card stat"><div class="v num" id="cash">90.0万</div><div class="k">资金池</div></div>
+  </div>
+  <div class="stats">
+    <div class="card stat"><div class="v num" id="mktval">—</div><div class="k">持仓市值</div></div>
+    <div class="card stat"><div class="v num" id="total">—</div><div class="k">总资产</div></div>
+    <div class="card stat"><div class="v num" id="principal">—</div><div class="k">本金</div></div>
+    <div class="card stat"><div class="v num" id="ret">—</div><div class="k">收益率</div></div>
+  </div>
+  <div class="stats">
+    <div class="card stat"><div class="v num" id="costval">—</div><div class="k">持仓成本</div></div>
+    <div class="card stat"><div class="v num" id="costpx">—</div><div class="k">成本价</div></div>
+    <div class="card stat"><div class="v num" id="fpnl">—</div><div class="k">收益</div></div>
+    <div class="card stat"><div class="v num" id="fret">—</div><div class="k">持仓盈亏率</div></div>
+  </div>
+
+  <div id="levels"></div>
+
+  <div class="sect">交易台账</div>
+  <div class="card">
+    <table><thead><tr><th>日期</th><th>档位</th><th>方向</th><th>股数</th><th>价格</th><th>金额</th><th>PB</th></tr></thead>
+    <tbody id="log"><tr><td colspan="7" class="note">暂无记录</td></tr></tbody></table>
+  </div>
+
+  <div class="btnrow">
+    <button class="ghost" onclick="dividend()">分红到账</button>
+    <button class="ghost" onclick="adjustCash()">资金调整</button>
+    <button class="ghost" onclick="setCashTarget()">设资金池</button>
+    <button class="ghost" onclick="undoLast()">撤销上一笔</button>
+    <button class="ghost" onclick="exportCSV()">导出台账</button>
+    <button class="ghost" onclick="backup()">备份数据</button>
+    <button class="ghost" onclick="restore()">恢复数据</button>
+    <button class="ghost" onclick="resetAll()">清空重置</button>
+    <button class="ghost" onclick="quitApp()">退出</button>
+  </div>
+
+  <div class="card" style="margin-top:12px">
+    <div style="font-size:14px;font-weight:600;margin-bottom:6px">☁️ 云同步（GitHub Gist）</div>
+    <div style="font-size:12px;color:var(--sub);line-height:1.6;margin-bottom:8px">
+      填 GitHub 私人令牌（只需 gist 权限）。首次 Gist ID 留空会自动创建私有 Gist；各设备填同样的令牌 + Gist ID 即可同步同一份数据。
+    </div>
+    <input id="ghToken" type="password" placeholder="GitHub Token（gist 权限）" style="margin-bottom:8px">
+    <input id="ghGist" type="text" placeholder="Gist ID（首次留空，自动创建）" style="margin-bottom:8px">
+    <div style="display:flex;gap:8px">
+      <button class="ghost" style="flex:1" onclick="ghConnect()">连接 / 同步</button>
+      <button class="ghost" style="flex:1" onclick="ghPushNow()">立即上传</button>
+    </div>
+    <div id="ghStatus" style="font-size:12px;color:var(--sub);margin-top:6px"></div>
+  </div>
+
+  <div class="note">
+    规则：卖出 1.00/1.15（需股息率&lt;5%）· 回补 0.85/0.80 · PB≤重置线0.90→卖出档重新武装，PB≥重置线0.90→回补档重新武装 · 底仓14,000股不卖。<br>
+    「分红到账」会加现金并摊薄持仓成本；「资金调整/设资金池」可入金出金；误操作点「撤销上一笔」。本金=成本价×持股+资金池；收益=市值−持仓成本（持仓成本=成本价×持股）；收益率=收益÷本金；持仓盈亏率=收益÷持仓成本。股价/BVPS/DPS 打开时自动抓取。
+  </div>
+  <div class="note" id="storeMode"></div>
+</div>
+
+<script>
+const LV=[
+ {id:'b2',name:'回补②',cond:'PB≤0.80 · 买剩余现金1/2',key:'PB_B2',dir:'买',frac:0.5},
+ {id:'b1',name:'回补①',cond:'PB≤0.85 · 买现金池1/3',key:'PB_B1',dir:'买',frac:1/3},
+ {id:'s1',name:'卖出①',cond:'PB≥1.00 且股息率<5% · 卖1,900股',key:'PB_S1',dir:'卖',qty:1900},
+ {id:'s2',name:'卖出②',cond:'PB≥1.15 且股息率<5% · 卖2,000股',key:'PB_S2',dir:'卖',qty:2000},
+];
+const DEF={price:42.45,bvps:43.43,dps:2.016,rearm:0.90,PB_B1:0.85,PB_B2:0.80,PB_S1:1.00,PB_S2:1.15,shares:17900,cash:19251.97,cost:null,armed:{b1:1,b2:1,s1:1,s2:1},log:[]};
+let S=load();
+// 定标属于规则而非用户状态：每次加载强制使用当前定标，档位武装状态保留
+['rearm','PB_B1','PB_B2','PB_S1','PB_S2'].forEach(k=>{S[k]=DEF[k];});
+let MEM=JSON.stringify(S);
+function load(){try{const s=localStorage.getItem('cmb_pb_desk_v2');if(s){const o=JSON.parse(s);if(o&&o.armed)return o;}}catch(e){}return JSON.parse(JSON.stringify(DEF));}
+function save(flush){syncInputs();MEM=JSON.stringify(S);try{localStorage.setItem('cmb_pb_desk_v2',MEM);}catch(e){}if(window.__server){clearTimeout(save.__t);const post=()=>fetch('/api/state',{method:'POST',headers:{'Content-Type':'application/json'},body:MEM}).catch(()=>{});if(flush){post();}else{save.__t=setTimeout(post,250);}}ghAutoPush();}
+const $=id=>document.getElementById(id);
+const fmt=n=>Math.round(n).toLocaleString('zh-CN');
+const money=v=>Math.abs(v)>=100000?(v/10000).toFixed(2)+'万':v.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2});
+if(/iPhone|iPad/.test(navigator.userAgent)&&!navigator.standalone&&!localStorage.getItem('cmb_tip_hide')){
+  $('tip').style.display='block';
+  try{localStorage.setItem('cmb_tip_hide','1');}catch(e){}
+}
+
+function syncInputs(){
+  S.price=parseFloat($('price').value)||0;
+  S.bvps=parseFloat($('bvps').value)||0;
+  S.dps=parseFloat($('dps').value)||0;
+  S.rearm=parseFloat($('rearm').value)||0;
+  S.shares=Math.max(0,Math.floor(parseFloat($('sharesInput').value)||0));
+  const cv=parseFloat($('cost').value);S.cost=isNaN(cv)?null:Math.round(cv*S.shares*100)/100;
+}
+function fillInputs(){
+  if(S.price!==undefined)$('price').value=S.price;
+  if(S.bvps!==undefined)$('bvps').value=S.bvps;
+  if(S.dps!==undefined)$('dps').value=S.dps;
+  if(S.rearm!==undefined)$('rearm').value=S.rearm;
+  if(S.shares!==undefined)$('sharesInput').value=S.shares;
+}
+function ensureCostField(){
+  $('cost').value=(S.cost==null||S.shares<=0)?'':+(S.cost/S.shares).toFixed(4);
+}
+function setStoreMode(){
+  const el=$('storeMode');
+  if(window.__server){el.textContent='💾 磁盘持久化已启用：数据实时写入「交易台数据.json」与「交易台账.csv」。退出请点下方「退出」按钮。';}
+  else{el.textContent='ℹ️ 本地存储模式：数据保存在当前浏览器(localStorage)。换设备或清缓存前，请用「备份数据」导出 JSON。';}
+}
+
+function calc(){
+  const p=parseFloat($('price').value)||0,bv=parseFloat($('bvps').value)||1,dps=parseFloat($('dps').value)||0,ra=parseFloat($('rearm').value)||1;
+  const pb=p/bv,y=dps/p;
+  if(pb<=ra){S.armed.s1=1;S.armed.s2=1;}
+  if(pb>=ra){S.armed.b1=1;S.armed.b2=1;}
+  return{p,bv,dps,ra,pb,y};
+}
+
+function render(flush){
+  const c=calc();
+  $('pb').textContent=c.pb.toFixed(2);
+  $('yld').textContent=(c.y*100).toFixed(2)+'%';
+  $('shares').textContent=fmt(S.shares);
+  const si=$('sharesInput');if(document.activeElement!==si){si.value=S.shares;}
+  $('cash').textContent=money(S.cash);
+  const mkt=c.p*S.shares, total=mkt+S.cash;
+  $('mktval').textContent=money(mkt);
+  $('total').textContent=money(total);
+  let cpxRaw=$('cost').value;
+  let costpx=(cpxRaw===''||isNaN(parseFloat(cpxRaw)))?(S.shares>0?mkt/S.shares:0):parseFloat(cpxRaw);
+  let cost=costpx*S.shares;
+  const principal=cost+S.cash;
+  const pnl=mkt-cost;
+  const ret=principal>0?(pnl/principal*100):0;
+  $('principal').textContent=money(principal);
+  const re=$('ret');re.textContent=(ret>=0?'+':'')+ret.toFixed(2)+'%';re.style.color=ret>=0?'var(--green)':'var(--red)';
+  $('costval').textContent=money(cost);
+  $('costpx').textContent=S.shares>0?(cost/S.shares).toFixed(4)+'元':'—';
+  const fret=cost>0?(pnl/cost*100):0;
+  const fp=$('fpnl');fp.textContent=(pnl>=0?'+':'')+money(Math.abs(pnl));fp.style.color=pnl>=0?'var(--green)':'var(--red)';
+  const fr=$('fret');fr.textContent=(fret>=0?'+':'')+fret.toFixed(2)+'%';fr.style.color=pnl>=0?'var(--green)':'var(--red)';
+  const grid=S.shares-14000;
+  const fS1=S.armed.s1&&c.pb>=S.PB_S1&&c.y<0.05&&grid>=1900;
+  const fS2=S.armed.s2&&c.pb>=S.PB_S2&&c.y<0.05&&grid>=2000;
+  const fB1=S.armed.b1&&c.pb<=S.PB_B1;
+  const fB2=S.armed.b2&&c.pb<=S.PB_B2;
+  const st=$('status');let t='○ 观望',cls='b-off';
+  if(fS2){t='⚠ 卖出②';cls='b-hit';}
+  else if(fS1){t='⚠ 卖出①';cls='b-hit';}
+  else if(fB2){t='⚠ 回补②';cls='b-hit';}
+  else if(fB1){t='⚠ 回补①';cls='b-hit';}
+  st.textContent=t;st.className='badge '+cls;
+  const box=$('levels');box.innerHTML='';
+  LV.forEach(L=>{
+    const th=c.bv*S[L.key],armed=S.armed[L.id];
+    let can=false,qt='';
+    if(L.dir==='卖'){can=armed&&((L.id==='s1'&&fS1)||(L.id==='s2'&&fS2));qt=fmt(L.qty)+'股';}
+    else{const a=Math.floor(S.cash*L.frac/c.p/100)*100;can=armed&&((L.id==='b1'&&fB1)||(L.id==='b2'&&fB2))&&a>=100;qt=a>=100?fmt(a)+'股':'资金不足';}
+    const d=(th-c.p)/c.p*100;
+    const el=document.createElement('div');el.className='card lvl';
+    el.innerHTML=`<div class="lvl-top"><b>${L.name} ${L.dir==='卖'?'· 卖出':'· 买入'}</b><span class="chip ${armed?'on':'off'}">${armed?'已武装':'冷却中'}</span></div>
+    <div class="cond">${L.cond}</div>
+    <div class="lvl-mid"><span class="tprice num">${th.toFixed(2)}元</span><span class="dist">${d>0?'距触发 '+d.toFixed(1)+'%':'已过 '+Math.abs(d).toFixed(1)+'%'}</span></div>
+    <button class="act" ${can?'':'disabled'} onclick="trade('${L.id}')">${can?'⚡ 记录成交 · '+qt+'（数量可改）':(armed?'未触发 · '+L.cond:'冷却中 · '+ (L.dir==='卖'?'PB跌破重置线后':'PB涨破重置线后') +'重新武装')}</button>`;
+    box.appendChild(el);
+  });
+  draw(c);renderLog();save(flush);
+}
+
+function pushLog(c,L,qty,amt,id,cd){
+  S.log.unshift({d:new Date().toLocaleDateString('zh-CN'),lv:L.name,dir:L.dir,qty:qty,p:+c.p.toFixed(2),amt:Math.round(amt),pb:+c.pb.toFixed(3),id:id||L.id,cd:cd||0});
+  render(true);
+}
+function trade(id){
+  const c=calc(),L=LV.find(x=>x.id===id);let qty,amt;
+  if(L.dir==='卖'){
+    const maxq=Math.floor((S.shares-14000)/100)*100;
+    showModal('卖出股数（整手，最多'+maxq+'股）',L.qty,'底仓14,000股保留不动',(dv)=>{
+      if(dv===null)return; qty=Math.floor((parseFloat(dv)||0)/100)*100;
+      if(qty<100){$('msg').textContent='数量不足一手';return;}
+      if(qty>maxq){$('msg').textContent='超出可卖网格筹码';return;}
+      amt=qty*c.p;const sb=S.shares;const cd=-( (S.cost||0)/sb*qty );S.shares-=qty;S.cash+=amt;S.cost=(S.cost||0)+cd;ensureCostField();S.armed[id]=0;pushLog(c,L,qty,amt,id,cd);});
+  }else{
+    const maxq=Math.floor(S.cash*L.frac/c.p/100)*100;
+    showModal('买入股数（整手，规则上限'+maxq+'股）',maxq,'可填更少，按该档资金比例',(dv)=>{
+      if(dv===null)return; qty=Math.floor((parseFloat(dv)||0)/100)*100;
+      if(qty<100){$('msg').textContent='数量不足一手';return;}
+      if(qty>maxq){$('msg').textContent='超出该档资金上限';return;}
+      amt=qty*c.p;const cd=amt;S.shares+=qty;S.cash-=amt;S.cost=(S.cost||0)+cd;ensureCostField();S.armed[id]=0;pushLog(c,L,qty,amt,id,cd);});
+  }
+}
+function dividend(){
+  const c=calc();
+  const est=Math.round(c.dps*S.shares);
+  showModal('分红到账金额（元）',est,'已按 DPS×持股数 预填全年分红，可改为本次实际到账金额',(v)=>{
+    if(v===null)return;
+    const amt=parseFloat(v);
+    if(!(amt>0)){$('msg').textContent='金额无效';return;}
+    S.cash+=amt;
+    S.cost=(S.cost||0)-amt;ensureCostField();
+    S.log.unshift({d:new Date().toLocaleDateString('zh-CN'),lv:'分红',dir:'分红',qty:S.shares,p:+c.dps.toFixed(4),amt:Math.round(amt),pb:+c.pb.toFixed(3),id:'div',cd:-Math.round(amt)});
+    render(true);
+  });
+}
+function adjustCash(){
+  const c=calc();
+  showModal('资金池调整（元）','','正数=入金（现金增加）、负数=出金（现金减少）。本金将自动随资金池变动。',(v)=>{
+    if(v===null)return;
+    const amt=parseFloat(v);
+    if(!amt){$('msg').textContent='金额无效';return;}
+    if(S.cash+amt<0){$('msg').textContent='出金超过现金池，无法执行';return;}
+    S.cash+=amt;
+    S.log.unshift({d:new Date().toLocaleDateString('zh-CN'),lv:'资金调整',dir:amt>=0?'入金':'出金',qty:'',p:'',amt:Math.round(Math.abs(amt)),pb:+c.pb.toFixed(3),id:'cash'});
+    render(true);
+  });
+}
+function setCashTarget(){
+  const c=calc();
+  showModal('设置资金池目标值（元）',Math.round(S.cash),'直接把资金池设为该数值，与当前的差额记为入金/出金。本金将自动随资金池变动。',(v)=>{
+    if(v===null)return;
+    const target=parseFloat(v);
+    if(!(target>=0)){$('msg').textContent='目标值无效';return;}
+    const amt=Math.round(target-S.cash);
+    if(!amt){$('msg').textContent='与当前资金池相同，无需调整';return;}
+    S.cash=target;
+    S.log.unshift({d:new Date().toLocaleDateString('zh-CN'),lv:'资金调整',dir:amt>=0?'入金':'出金',qty:'',p:'',amt:Math.round(Math.abs(amt)),pb:+c.pb.toFixed(3),id:'cash'});
+    render(true);
+  });
+}
+function undoLast(){
+  if(!S.log.length){$('msg').textContent='没有可撤销的记录';return;}
+  const r=S.log.shift();
+  if(r.dir==='卖'){S.shares+=r.qty;S.cash-=r.amt;if(r.cd){S.cost=(S.cost||0)-r.cd;ensureCostField();}if(r.id)S.armed[r.id]=1;}
+  else if(r.dir==='买'){S.shares-=r.qty;S.cash+=r.amt;if(r.cd){S.cost=(S.cost||0)-r.cd;ensureCostField();}if(r.id)S.armed[r.id]=1;}
+  else if(r.dir==='分红'){S.cash-=r.amt;if(r.cd){S.cost=(S.cost||0)-r.cd;ensureCostField();}}
+  else if(r.dir==='入金'){S.cash-=r.amt;}
+  else if(r.dir==='出金'){S.cash+=r.amt;}
+  render(true);
+  $('msg').textContent='✓ 已撤销：'+r.d+' '+r.lv;
+}
+function renderLog(){
+  const t=$('log');
+  if(!S.log.length){t.innerHTML='<tr><td colspan="7" class="note">暂无记录</td></tr>';return;}
+  t.innerHTML=S.log.slice(0,50).map(r=>`<tr><td>${r.d}</td><td>${r.lv}</td><td>${r.dir}</td><td class="num">${r.qty?fmt(r.qty):'—'}</td><td class="num">${r.p?(+r.p).toFixed(2):'—'}</td><td class="num">${fmt(r.amt)}</td><td class="num">${(r.pb||0).toFixed(3)}</td></tr>`).join('');
+}
+
+function draw(c){
+  const svg=$('gauge'),x0=15,x1=345,lo=0.7,hi=1.55,X=v=>x0+(v-lo)/(hi-lo)*(x1-x0);
+  let g=`<line x1="${x0}" y1="24" x2="${x1}" y2="24" stroke="var(--line)" stroke-width="2"/>`;
+  [[c.ra,'重置线','var(--sub)'],[S.PB_B1,S.PB_B1.toFixed(2),'var(--blue)'],[S.PB_B2,S.PB_B2.toFixed(2),'var(--blue)'],[S.PB_S1,S.PB_S1.toFixed(2),'var(--red)'],[S.PB_S2,S.PB_S2.toFixed(2),'var(--red)']].forEach(([v,lb,col])=>{
+    g+=`<line x1="${X(v)}" y1="14" x2="${X(v)}" y2="34" stroke="${col}" stroke-width="2"/><text x="${X(v)}" y="9" text-anchor="middle" font-size="8.5" fill="var(--sub)">${lb}</text>`;});
+  const pc=Math.min(hi,Math.max(lo,c.pb));
+  g+=`<circle cx="${X(pc)}" cy="24" r="6.5" fill="var(--ink)"/><text x="${X(pc)}" y="51" text-anchor="middle" font-size="12.5" font-weight="600" fill="var(--ink)">${c.pb.toFixed(2)}</text>`;
+  svg.innerHTML=g;
+}
+
+async function fetchQuote(){
+  const msg=$('msg');msg.textContent='正在获取行情…';
+  const tryFetch=async(url,opt)=>{const r=await fetch(url,opt);if(!r.ok)throw 0;return r;};
+  let p=0;
+  try{const r=await tryFetch('https://push2.eastmoney.com/api/qt/stock/get?secid=1.600036&fields=f43');
+      const j=await r.json();p=j.data.f43/100;}catch(e){
+    try{const r=await tryFetch('https://qt.gtimg.cn/q=sh600036');
+        const t=await r.text();p=parseFloat(t.split('~')[3]);}catch(e2){}
+  }
+  if(p>0){
+    $('price').value=p.toFixed(2);
+    msg.textContent='✓ 股价已更新 '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+  }else{
+    msg.textContent='股价获取失败，请手动输入';
+  }
+  try{
+    const b=await tryFetch('https://datacenter.eastmoney.com/securities/api/data/v1/get?reportName=RPT_F10_FINANCE_MAINFINADATA&columns=ALL&filter=(SECUCODE%3D%22600036.SH%22)&pageNumber=1&pageSize=4&sortTypes=-1&sortColumns=REPORT_DATE&source=WEB&client=WEB');
+    const bj=await b.json();const bps=+bj.result.data[0].BPS;if(bps>0)$('bvps').value=bps.toFixed(2);
+  }catch(e){}
+  try{
+    const q=await tryFetch('https://datacenter.eastmoney.com/securities/api/data/v1/get?reportName=RPT_SHAREBONUS_DET&columns=ALL&filter=(SECUCODE%3D%22600036.SH%22)&pageNumber=1&pageSize=30&sortTypes=-1&sortColumns=EX_DIVIDEND_DATE&source=WEB&client=WEB');
+    const qj=await q.json();const now=Date.now();let s=0;
+    (qj.result.data||[]).forEach(e=>{if(new Date(e.EX_DIVIDEND_DATE).getTime()>=now-365*864e5){const mt=/10派([\d.]+)元/.exec(e.IMPL_PLAN_PROFILE||'');if(mt)s+=parseFloat(mt[1])/10;}});
+    if(s>0)$('dps').value=s.toFixed(3);
+  }catch(e){}
+  render(true);
+}
+function download(name,content,mime){
+  const b=new Blob([content],{type:mime});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;
+  document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
+}
+function backup(){
+  save();
+  const j=JSON.stringify(S);
+  const b64=btoa(unescape(encodeURIComponent(j)));
+  download('招行PB交易台备份_'+new Date().toISOString().slice(0,10)+'.json',j,'application/json');
+  const ta=document.createElement('textarea');ta.value=b64;document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy');$('msg').textContent='✓ 备份已下载并复制到剪贴板';}
+  catch(e){$('msg').textContent='✓ 备份已下载';}
+  ta.remove();
+}
+function applyRestore(s){
+  try{
+    let o;
+    try{o=JSON.parse(s);}catch(e){o=JSON.parse(decodeURIComponent(escape(atob(s.trim()))));}
+    if(o&&o.armed){S=o;fillInputs();ensureCostField();render(true);return true;}
+  }catch(e){}
+  return false;
+}
+function restore(){
+  const fi=document.createElement('input');fi.type='file';fi.accept='.json,.txt,application/json,text/plain';
+  fi.addEventListener('change',()=>{
+    const f=fi.files&&fi.files[0];if(!f)return;
+    const rd=new FileReader();
+    rd.onload=()=>{const ok=applyRestore(String(rd.result));$('msg').textContent=ok?'✓ 已恢复':'✗ 备份内容无法识别';};
+    rd.readAsText(f);
+  });
+  fi.click();
+}
+function exportCSV(){
+  if(!S.log.length){$('msg').textContent='暂无记录可导出';return;}
+  const head='\uFEFF日期,档位,方向,股数,价格,金额,PB\n';
+  const rows=S.log.slice().reverse().map(r=>`${r.d},${r.lv},${r.dir},${r.qty},${(r.p||0).toFixed(2)},${r.amt},${(r.pb||0).toFixed(3)}`).join('\n');
+  download('招行PB台账_'+new Date().toISOString().slice(0,10)+'.csv',head+rows,'text/csv;charset=utf-8');
+  $('msg').textContent='✓ 台账已导出';
+}
+async function quitApp(){
+  $('msg').textContent='正在保存并退出…';
+  syncInputs();MEM=JSON.stringify(S);
+  try{localStorage.setItem('cmb_pb_desk_v2',MEM);}catch(e){}
+  if(window.__server){
+    try{await fetch('/api/state',{method:'POST',headers:{'Content-Type':'application/json'},body:MEM});}catch(e){}
+    try{await fetch('/api/quit',{method:'POST'});}catch(e){}
+  }
+  document.body.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-size:16px;color:#8a8a8e">已保存，可关闭此标签页。</div>';
+  try{window.close();}catch(e){}
+}
+// ===== 云同步（GitHub Gist）=====
+function ghCfg(){return {token:localStorage.getItem('cmb_gh_token')||'',gist:localStorage.getItem('cmb_gh_gist')||''};}
+function ghSetCfg(t,g){try{localStorage.setItem('cmb_gh_token',t);localStorage.setItem('cmb_gh_gist',g);}catch(e){}}
+function ghHdr(t){return {Authorization:'Bearer '+t,Accept:'application/vnd.github+json','Content-Type':'application/json'};}
+async function ghPull(){
+  const c=ghCfg(); if(!c.token||!c.gist) return false;
+  const r=await fetch('https://api.github.com/gists/'+c.gist,{headers:ghHdr(c.token),cache:'no-store'});
+  if(!r.ok) throw new Error('拉取失败 '+r.status);
+  const j=await r.json(); const f=j.files&&j.files['cmb-pb-desk.json'];
+  if(!f||!f.content) return false;
+  const o=JSON.parse(f.content);
+  if(o&&o.armed){S=o;fillInputs();ensureCostField();render(true);return true;}
+  return false;
+}
+async function ghPush(){
+  const c=ghCfg(); if(!c.token) return false;
+  syncInputs(); MEM=JSON.stringify(S);
+  const body=JSON.stringify({description:'招行PB交易台数据',public:false,files:{'cmb-pb-desk.json':{content:MEM}}});
+  if(c.gist){
+    const r=await fetch('https://api.github.com/gists/'+c.gist,{method:'PATCH',headers:ghHdr(c.token),body});
+    if(!r.ok) throw new Error('上传失败 '+r.status);
+    return true;
+  }
+  const r=await fetch('https://api.github.com/gists',{method:'POST',headers:ghHdr(c.token),body});
+  if(!r.ok) throw new Error('创建失败 '+r.status);
+  const j=await r.json(); ghSetCfg(c.token,j.id); $('ghGist').value=j.id;
+  return true;
+}
+let ghTimer=null;
+function ghAutoPush(){const c=ghCfg();if(!c.token)return;clearTimeout(ghTimer);ghTimer=setTimeout(()=>{ghPush().catch(()=>{});},1500);}
+async function ghConnect(){
+  const t=$('ghToken').value.trim(); let g=$('ghGist').value.trim();
+  if(!t){$('ghStatus').textContent='请填写 GitHub Token';return;}
+  $('ghStatus').textContent='同步中…';
+  try{
+    if(!g){
+      const lr=await fetch('https://api.github.com/gists?per_page=100',{headers:ghHdr(t),cache:'no-store'});
+      if(lr.ok){
+        const list=await lr.json();
+        const found=(list||[]).find(x=>x.description==='招行PB交易台数据'&&x.files&&x.files['cmb-pb-desk.json']);
+        if(found){ g=found.id; $('ghGist').value=g; }
+      }
+    }
+    ghSetCfg(t,g);
+    const ok=await ghPull();
+    if(!ok){ await ghPush(); }
+    $('ghStatus').textContent='✓ 已同步';
+  }catch(e){ $('ghStatus').textContent='✗ '+e.message+'（令牌需 gist 权限）'; }
+}
+async function ghPushNow(){
+  const t=$('ghToken').value.trim();
+  if(!t){$('ghStatus').textContent='请填写 GitHub Token';return;}
+  ghSetCfg(t,$('ghGist').value.trim()); $('ghStatus').textContent='上传中…';
+  try{ await ghPush(); $('ghStatus').textContent='✓ 已上传'; }
+  catch(e){ $('ghStatus').textContent='✗ '+e.message; }
+}
+function ghInit(){
+  const c=ghCfg();
+  if(c.token)$('ghToken').value=c.token;
+  if(c.gist)$('ghGist').value=c.gist;
+  if(c.token&&c.gist){ ghPull().then(ok=>{ if(ok)$('ghStatus').textContent='✓ 已从云端同步'; }).catch(()=>{ $('ghStatus').textContent='云端同步失败（检查令牌/网络）'; }); }
+}
+function resetAll(){
+  showModal('清空全部记录并恢复初始状态？',null,'持股17,900股、现金19,251.97元、四档重新武装。不可撤销。',(v)=>{
+    if(v===null)return;
+    S=JSON.parse(JSON.stringify(DEF));
+    fillInputs();ensureCostField();render(true);});
+}
+['price','bvps','dps','rearm','cost'].forEach(id=>$(id).addEventListener('input',()=>render()));
+$('sharesInput').addEventListener('input',()=>{S.shares=Math.max(0,Math.floor(parseFloat($('sharesInput').value)||0));render();});
+ensureCostField();
+$('sharesInput').value=S.shares;
+render();
+setStoreMode();
+// 快捷指令版状态接力：URL#后为备份数据时自动恢复
+(function(){
+  try{
+    if(location.hash.length>20){
+      const o=JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(1)))));
+      if(o&&o.armed){S=o;fillInputs();ensureCostField();render(true);}
+    }
+  }catch(e){}
+})();
+// 取数：存在本地服务(/api/state)则用磁盘数据；否则用浏览器本地存储（GitHub Pages 静态托管）
+(function(){
+  if(location.protocol==='file:'||location.protocol==='data:'){setStoreMode();return;}
+  let tries=0;
+  function attempt(){
+    tries++;
+    $('msg').textContent='正在连接服务…';
+    fetch('/api/state',{cache:'no-store'}).then(r=>{
+      if(!r.ok) return {__static:true};
+      return r.json();
+    }).then(o=>{
+      if(o&&o.__static){window.__server=false;$('msg').textContent='';setStoreMode();return;}
+      window.__server=true;
+      if(o&&o.armed){S=o;fillInputs();ensureCostField();render(true);$('msg').textContent='✓ 已加载磁盘数据';}
+      setStoreMode();
+    }).catch(()=>{
+      if(tries<20){setTimeout(attempt,300);}
+      else{window.__server=false;$('msg').textContent='本地存储模式';setStoreMode();}
+    });
+  }
+  attempt();
+})();
+ghInit();
+setTimeout(fetchQuote,600);setInterval(fetchQuote,300000);
+</script>
+
+<div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99;align-items:center;justify-content:center;padding:24px">
+  <div style="background:var(--bg);border-radius:16px;padding:18px;width:100%;max-width:340px">
+    <div id="mTitle" style="font-size:16px;font-weight:600;margin-bottom:10px"></div>
+    <input id="mInput" type="text" inputmode="decimal" style="width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;font-size:17px;background:var(--card);color:var(--ink)">
+    <div id="mNote" class="note" style="margin:8px 0 0"></div>
+    <div id="mChkRow" style="display:none;margin-top:10px;align-items:center;gap:8px">
+      <input type="checkbox" id="mChk" style="width:auto;flex:none">
+      <label id="mChkLbl" style="font-size:13px;color:var(--sub)"></label>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="ghost" style="flex:1;min-height:44px" onclick="closeModal()">取消</button>
+      <button class="act" style="flex:1" id="mOk">确定</button>
+    </div>
+  </div>
+</div>
+<script>
+let mCb=null;
+function showModal(title,defv,note,cb,chkLabel){
+  document.getElementById('mTitle').textContent=title;
+  const mi=document.getElementById('mInput');mi.value=defv;mi.style.display=defv===null?'none':'block';
+  document.getElementById('mNote').textContent=note||'';
+  const chk=document.getElementById('mChk');
+  if(chkLabel){document.getElementById('mChkRow').style.display='flex';document.getElementById('mChkLbl').textContent=chkLabel;chk.checked=true;}
+  else{document.getElementById('mChkRow').style.display='none';chk.checked=false;}
+  mCb=cb;document.getElementById('modal').style.display='flex';
+  if(defv!==null)setTimeout(()=>{mi.focus();mi.select();},50);
+}
+function closeModal(){document.getElementById('modal').style.display='none';mCb=null;}
+document.getElementById('mOk').addEventListener('click',()=>{
+  const v=document.getElementById('mInput').value;const chk=document.getElementById('mChk').checked;const cb=mCb;closeModal();if(cb)cb(v,chk);
+});
+</script>
+</body>
+</html>
