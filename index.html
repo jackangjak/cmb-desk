@@ -35,7 +35,7 @@ body{font-family:-apple-system,"PingFang SC","Helvetica Neue",sans-serif;backgro
 .field label{font-size:12px;color:var(--sub);font-weight:500}
 input{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:12px;font-size:16px;font-weight:500;background:var(--card);color:var(--ink);transition:border-color .15s,box-shadow .15s;-webkit-appearance:none;appearance:none}
 input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,108,246,.14)}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0}
 .hide{display:none!important}
 .stat{text-align:center;padding:8px 3px}
 .stat .v{font-size:15px;font-weight:750;letter-spacing:-.3px}
@@ -105,18 +105,18 @@ tbody tr:last-child td{border-bottom:none}
   </div>
 
   <div class="stats">
-    <div class="card stat hide"><div class="v num" id="pb">0.98</div><div class="k">当前 PB</div></div>
-    <div class="card stat"><div class="v num" id="yld">4.75%</div><div class="k">股息率</div></div>
-    <div class="card stat hide"><div class="v num" id="shares">17,900</div><div class="k">持股</div></div>
-    <div class="card stat"><div class="v num" id="cash">90.0万</div><div class="k">资金池</div></div>
-    <div class="card stat"><div class="v num" id="mktval">—</div><div class="k">持仓市值</div></div>
     <div class="card stat"><div class="v num" id="total">—</div><div class="k">总资产</div></div>
+    <div class="card stat"><div class="v num" id="mktval">—</div><div class="k">持仓市值</div></div>
+    <div class="card stat"><div class="v num" id="cash">90.0万</div><div class="k">资金池</div></div>
+    <div class="card stat"><div class="v num" id="yld">4.75%</div><div class="k">股息率</div></div>
     <div class="card stat"><div class="v num" id="principal">—</div><div class="k">本金</div></div>
-    <div class="card stat"><div class="v num" id="ret">—</div><div class="k">收益率</div></div>
-    <div class="card stat"><div class="v num" id="costval">—</div><div class="k">持仓成本</div></div>
-    <div class="card stat hide"><div class="v num" id="costpx">—</div><div class="k">成本价</div></div>
     <div class="card stat"><div class="v num" id="fpnl">—</div><div class="k">收益</div></div>
+    <div class="card stat"><div class="v num" id="ret">—</div><div class="k">收益率</div></div>
     <div class="card stat"><div class="v num" id="fret">—</div><div class="k">持仓盈亏率</div></div>
+    <div class="card stat hide"><div class="v num" id="pb">0.98</div><div class="k">当前 PB</div></div>
+    <div class="card stat hide"><div class="v num" id="shares">17,900</div><div class="k">持股</div></div>
+    <div class="card stat hide"><div class="v num" id="costval">—</div><div class="k">持仓成本</div></div>
+    <div class="card stat hide"><div class="v num" id="costpx">—</div><div class="k">成本价</div></div>
   </div>
 
   <div id="levels"></div>
