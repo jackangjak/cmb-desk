@@ -63,7 +63,7 @@ button:active{transform:scale(.985)}
 .hero{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:6px 12px;box-shadow:var(--shadow)}
 .hero-gauge{flex:1;min-width:0}
 .hero-price{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:0}
-.hero-price input{width:104px;font-size:26px;font-weight:800;letter-spacing:-.5px;text-align:right;padding:2px 4px;border:none;background:transparent;color:var(--ink)}
+.hero-price input{width:122px;font-size:32px;font-weight:800;letter-spacing:-.6px;text-align:right;padding:2px 4px;border:none;background:transparent;color:var(--ink)}
 .hero-price input:focus{background:var(--bg);box-shadow:0 0 0 3px rgba(59,108,246,.14);border-radius:8px}
 .hero-price span{font-size:10px;color:var(--sub)}
 .inputs-row{gap:6px}
@@ -377,8 +377,10 @@ function renderLog(){
 function draw(c){
   const svg=$('gauge'),x0=15,x1=345,lo=0.7,hi=1.55,X=v=>x0+(v-lo)/(hi-lo)*(x1-x0);
   let g=`<line x1="${x0}" y1="24" x2="${x1}" y2="24" stroke="var(--line)" stroke-width="2"/>`;
-  [[c.ra,'重置线','var(--sub)'],[S.PB_B1,S.PB_B1.toFixed(2),'var(--blue)'],[S.PB_B2,S.PB_B2.toFixed(2),'var(--blue)'],[S.PB_S1,S.PB_S1.toFixed(2),'var(--red)'],[S.PB_S2,S.PB_S2.toFixed(2),'var(--red)']].forEach(([v,lb,col])=>{
-    g+=`<line x1="${X(v)}" y1="14" x2="${X(v)}" y2="34" stroke="${col}" stroke-width="2"/><text x="${X(v)}" y="9" text-anchor="middle" font-size="11" fill="var(--sub)">${lb}</text>`;});
+  let i=0;
+  [[c.ra,c.ra.toFixed(2),'var(--sub)'],[S.PB_B1,S.PB_B1.toFixed(2),'var(--blue)'],[S.PB_B2,S.PB_B2.toFixed(2),'var(--blue)'],[S.PB_S1,S.PB_S1.toFixed(2),'var(--red)'],[S.PB_S2,S.PB_S2.toFixed(2),'var(--red)']].forEach(([v,lb,col])=>{
+    const y=(i%2===0)?9:21; i++;
+    g+=`<line x1="${X(v)}" y1="14" x2="${X(v)}" y2="34" stroke="${col}" stroke-width="2"/><text x="${X(v)}" y="${y}" text-anchor="middle" font-size="11" fill="var(--sub)">${lb}</text>`;});
   const pc=Math.min(hi,Math.max(lo,c.pb));
   g+=`<circle cx="${X(pc)}" cy="24" r="7" fill="var(--ink)"/><text x="${X(pc)}" y="51" text-anchor="middle" font-size="15" font-weight="600" fill="var(--ink)">${c.pb.toFixed(2)}</text>`;
   svg.innerHTML=g;
