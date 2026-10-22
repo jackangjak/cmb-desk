@@ -135,8 +135,8 @@ body{background:var(--bg-grad)}
       <div class="field"><label>持股数</label><input id="sharesInput" type="text" inputmode="decimal" value="17900"></div>
       <div class="field"><label>重置线</label><input id="rearm" type="text" inputmode="decimal" value="0.90"></div>
     </div>
-    <button class="ghost" onclick="fetchQuote()" style="width:100%;margin-top:8px">⟳ 自动获取最新行情</button>
   </details>
+  <button class="ghost" onclick="fetchQuote()" style="width:100%;margin-top:8px">⟳ 自动获取最新行情</button>
 
   <div class="stats">
     <div class="card stat"><div class="v num" id="total">—</div><div class="k">总资产</div></div>
@@ -269,12 +269,12 @@ function render(flush){
   const pnl=mkt-cost;
   const ret=principal>0?(pnl/principal*100):0;
   $('principal').textContent=money(principal);
-  const re=$('ret');re.textContent=(ret>=0?'+':'')+ret.toFixed(2)+'%';re.style.color=ret>=0?'var(--green)':'var(--red)';
+  const re=$('ret');re.textContent=(ret>=0?'+':'')+ret.toFixed(2)+'%';re.style.color=ret>=0?'var(--red)':'var(--green)';
   $('costval').textContent=money(cost);
   $('costpx').textContent=S.shares>0?(cost/S.shares).toFixed(4)+'元':'—';
   const fret=cost>0?(pnl/cost*100):0;
-  const fp=$('fpnl');fp.textContent=(pnl>=0?'+':'')+money(Math.abs(pnl));fp.style.color=pnl>=0?'var(--green)':'var(--red)';
-  const fr=$('fret');fr.textContent=(fret>=0?'+':'')+fret.toFixed(2)+'%';fr.style.color=pnl>=0?'var(--green)':'var(--red)';
+  const fp=$('fpnl');fp.textContent=(pnl>=0?'+':'')+money(Math.abs(pnl));fp.style.color=pnl>=0?'var(--red)':'var(--green)';
+  const fr=$('fret');fr.textContent=(fret>=0?'+':'')+fret.toFixed(2)+'%';fr.style.color=pnl>=0?'var(--red)':'var(--green)';
   const grid=S.shares-14000;
   const fS1=S.armed.s1&&c.pb>=S.PB_S1&&c.y<0.05&&grid>=1900;
   const fS2=S.armed.s2&&c.pb>=S.PB_S2&&c.y<0.05&&grid>=2000;
