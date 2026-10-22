@@ -106,6 +106,10 @@ body{background:var(--bg-grad)}
 #levels .lvl:nth-child(3),#levels .lvl:nth-child(4){background:linear-gradient(135deg,rgba(239,68,68,.10),rgba(239,68,68,.02))}
 .more summary{background:linear-gradient(135deg,rgba(79,109,245,.10),rgba(124,58,237,.06));border-color:rgba(79,109,245,.22)}
 .btnrow .ghost{background:linear-gradient(180deg,#ffffff,rgba(79,109,245,.05));border-color:rgba(79,109,245,.20)}
+@media(max-width:560px){
+  .hero{flex-direction:column;align-items:stretch;gap:4px}
+  .hero-price{align-self:flex-end}
+}
 </style>
 </head>
 <body>
@@ -164,18 +168,21 @@ body{background:var(--bg-grad)}
     <tbody id="log"><tr><td colspan="7" class="note">暂无记录</td></tr></tbody></table>
   </div>
 
-  <div class="btnrow">
-    <button class="ghost" onclick="dividend()">分红到账</button>
-    <button class="ghost" onclick="cashAdjust()">资金池</button>
-    <button class="ghost" onclick="undoLast()">撤销上一笔</button>
-  </div>
-  <div class="btnrow">
-    <button class="ghost" onclick="exportCSV()">导出台账</button>
-    <button class="ghost" onclick="backup()">备份数据</button>
-    <button class="ghost" onclick="restore()">恢复数据</button>
-    <button class="ghost" onclick="resetAll()">清空重置</button>
-    <button class="ghost" onclick="quitApp()">退出</button>
-  </div>
+  <details class="more" style="margin-top:8px">
+    <summary>⚙️ 操作 · 交易 / 数据</summary>
+    <div class="btnrow" style="margin-top:10px">
+      <button class="ghost" onclick="dividend()">分红到账</button>
+      <button class="ghost" onclick="cashAdjust()">资金池</button>
+      <button class="ghost" onclick="undoLast()">撤销上一笔</button>
+    </div>
+    <div class="btnrow">
+      <button class="ghost" onclick="exportCSV()">导出台账</button>
+      <button class="ghost" onclick="backup()">备份数据</button>
+      <button class="ghost" onclick="restore()">恢复数据</button>
+      <button class="ghost" onclick="resetAll()">清空重置</button>
+      <button class="ghost" onclick="quitApp()">退出</button>
+    </div>
+  </details>
 
   <details class="more" style="margin-top:10px">
     <summary>☁️ 同步 / 说明</summary>
