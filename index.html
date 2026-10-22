@@ -77,8 +77,8 @@ tbody tr:last-child td{border-bottom:none}
 .banner{background:rgba(59,108,246,.08);color:var(--blue);border-radius:12px;padding:11px 14px;font-size:13px;line-height:1.6;margin-bottom:10px;border:1px solid rgba(59,108,246,.16)}
 .banner b{cursor:pointer;float:right;padding:0 6px}
 .sect{font-size:13px;font-weight:650;color:var(--sub);margin:18px 2px 8px;letter-spacing:.3px}
-.btnrow{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
-.btnrow button{flex:1 1 30%;min-width:100px}
+.btnrow{display:flex;gap:6px;margin-top:8px;flex-wrap:nowrap}
+.btnrow button{flex:1 1 0;min-width:0;padding:0 4px;font-size:12px;min-height:38px}
 .more{margin-top:10px}
 .more summary{cursor:pointer;list-style:none;text-align:center;font-size:13px;font-weight:600;color:var(--sub);padding:11px 14px;background:var(--card);border:1px solid var(--line);border-radius:12px}
 .more summary::-webkit-details-marker{display:none}
@@ -135,10 +135,7 @@ tbody tr:last-child td{border-bottom:none}
 
   <div id="levels"></div>
 
-  <details class="more">
-<summary>更多 · 台账 / 工具 / 同步 / 说明</summary>
-
-<div class="sect">交易台账</div>
+  <div class="sect">交易台账</div>
   <div class="card">
     <table><thead><tr><th>日期</th><th>档位</th><th>方向</th><th>股数</th><th>价格</th><th>金额</th><th>PB</th></tr></thead>
     <tbody id="log"><tr><td colspan="7" class="note">暂无记录</td></tr></tbody></table>
@@ -149,6 +146,8 @@ tbody tr:last-child td{border-bottom:none}
     <button class="ghost" onclick="adjustCash()">资金调整</button>
     <button class="ghost" onclick="setCashTarget()">设资金池</button>
     <button class="ghost" onclick="undoLast()">撤销上一笔</button>
+  </div>
+  <div class="btnrow">
     <button class="ghost" onclick="exportCSV()">导出台账</button>
     <button class="ghost" onclick="backup()">备份数据</button>
     <button class="ghost" onclick="restore()">恢复数据</button>
@@ -156,26 +155,28 @@ tbody tr:last-child td{border-bottom:none}
     <button class="ghost" onclick="quitApp()">退出</button>
   </div>
 
-  <div class="card" style="margin-top:12px">
-    <div style="font-size:14px;font-weight:600;margin-bottom:6px">☁️ 云同步（GitHub Gist）</div>
-    <div style="font-size:12px;color:var(--sub);line-height:1.6;margin-bottom:8px">
-      填 GitHub 私人令牌（只需 gist 权限）。首次 Gist ID 留空会自动创建私有 Gist；各设备填同样的令牌 + Gist ID 即可同步同一份数据。
+  <details class="more" style="margin-top:10px">
+    <summary>☁️ 同步 / 说明</summary>
+    <div class="card" style="margin-top:10px">
+      <div style="font-size:14px;font-weight:600;margin-bottom:6px">☁️ 云同步（GitHub Gist）</div>
+      <div style="font-size:12px;color:var(--sub);line-height:1.6;margin-bottom:8px">
+        填 GitHub 私人令牌（只需 gist 权限）。首次 Gist ID 留空会自动创建私有 Gist；各设备填同样的令牌 + Gist ID 即可同步同一份数据。
+      </div>
+      <input id="ghToken" type="password" placeholder="GitHub Token（gist 权限）" style="margin-bottom:8px">
+      <input id="ghGist" type="text" placeholder="Gist ID（首次留空，自动创建）" style="margin-bottom:8px">
+      <div style="display:flex;gap:8px">
+        <button class="ghost" style="flex:1" onclick="ghConnect()">连接 / 同步</button>
+        <button class="ghost" style="flex:1" onclick="ghPushNow()">立即上传</button>
+      </div>
+      <div id="ghStatus" style="font-size:12px;color:var(--sub);margin-top:6px"></div>
     </div>
-    <input id="ghToken" type="password" placeholder="GitHub Token（gist 权限）" style="margin-bottom:8px">
-    <input id="ghGist" type="text" placeholder="Gist ID（首次留空，自动创建）" style="margin-bottom:8px">
-    <div style="display:flex;gap:8px">
-      <button class="ghost" style="flex:1" onclick="ghConnect()">连接 / 同步</button>
-      <button class="ghost" style="flex:1" onclick="ghPushNow()">立即上传</button>
-    </div>
-    <div id="ghStatus" style="font-size:12px;color:var(--sub);margin-top:6px"></div>
-  </div>
 
-  <div class="note">
-    规则：卖出 1.00/1.15（需股息率&lt;5%）· 回补 0.85/0.80 · PB≤重置线0.90→卖出档重新武装，PB≥重置线0.90→回补档重新武装 · 底仓14,000股不卖。<br>
-    「分红到账」会加现金并摊薄持仓成本；「资金调整/设资金池」可入金出金；误操作点「撤销上一笔」。本金=成本价×持股+资金池；收益=市值−持仓成本（持仓成本=成本价×持股）；收益率=收益÷本金；持仓盈亏率=收益÷持仓成本。股价/BVPS/DPS 打开时自动抓取。
-  </div>
-  <div class="note" id="storeMode"></div>
-</details>
+    <div class="note">
+      规则：卖出 1.00/1.15（需股息率&lt;5%）· 回补 0.85/0.80 · PB≤重置线0.90→卖出档重新武装，PB≥重置线0.90→回补档重新武装 · 底仓14,000股不卖。<br>
+      「分红到账」会加现金并摊薄持仓成本；「资金调整/设资金池」可入金出金；误操作点「撤销上一笔」。本金=成本价×持股+资金池；收益=市值−持仓成本（持仓成本=成本价×持股）；收益率=收益÷本金；持仓盈亏率=收益÷持仓成本。股价/BVPS/DPS 打开时自动抓取。
+    </div>
+    <div class="note" id="storeMode"></div>
+  </details>
 </div>
 
 <script>
