@@ -143,8 +143,7 @@ tbody tr:last-child td{border-bottom:none}
 
   <div class="btnrow">
     <button class="ghost" onclick="dividend()">分红到账</button>
-    <button class="ghost" onclick="adjustCash()">资金调整</button>
-    <button class="ghost" onclick="setCashTarget()">设资金池</button>
+    <button class="ghost" onclick="cashAdjust()">资金池</button>
     <button class="ghost" onclick="undoLast()">撤销上一笔</button>
   </div>
   <div class="btnrow">
@@ -317,6 +316,21 @@ function dividend(){
     S.log.unshift({d:new Date().toLocaleDateString('zh-CN'),lv:'分红',dir:'分红',qty:S.shares,p:+c.dps.toFixed(4),amt:Math.round(amt),pb:+c.pb.toFixed(3),id:'div',cd:-Math.round(amt)});
     render(true);
   });
+}
+function cashAdjust(){
+  const c=calc();
+  showModal('资金池调整（元）','','填正数=入金、负数=出金；勾选「设为目标值」则直接把资金池设为该数。',(v,isTarget)=>{
+    if(v===null)return;
+    const val=parseFloat(v);
+    if(isNaN(val)){$('msg').textContent='金额无效';return;}
+    const target = isTarget ? val : (S.cash + val);
+    if(target<0){$('msg').textContent='资金池不能为负';return;}
+    const amt = target - S.cash;
+    if(Math.abs(amt)<0.005){$('msg').textContent='没有变化';return;}
+    S.cash = target;
+    S.log.unshift({d:new Date().toLocaleDateString('zh-CN'),lv:'资金调整',dir:amt>=0?'入金':'出金',qty:'',p:'',amt:Math.round(Math.abs(amt)),pb:+c.pb.toFixed(3),id:'cash'});
+    render(true);
+  },'设为目标值');
 }
 function adjustCash(){
   const c=calc();
