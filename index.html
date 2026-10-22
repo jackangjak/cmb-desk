@@ -83,6 +83,26 @@ tbody tr:last-child td{border-bottom:none}
 .more summary{cursor:pointer;list-style:none;text-align:center;font-size:13px;font-weight:600;color:var(--sub);padding:11px 14px;background:var(--card);border:1px solid var(--line);border-radius:12px}
 .more summary::-webkit-details-marker{display:none}
 .more[open] summary{border-bottom-left-radius:0;border-bottom-right-radius:0}
+
+/* ===== 配色美化 ===== */
+:root{--bg-grad:linear-gradient(180deg,#e9efff 0%,#f4f6fa 340px)}
+@media(prefers-color-scheme:dark){:root{--bg-grad:linear-gradient(180deg,#141a2e 0%,#0c0f14 340px)}}
+body{background:var(--bg-grad)}
+.bar h1{background:linear-gradient(90deg,#4f6df5,#7c3aed);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hero{display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#4f6df5,#7c3aed);border:none;border-radius:16px;padding:8px 14px;box-shadow:0 10px 30px rgba(79,109,245,.35);--line:rgba(255,255,255,.28);--sub:rgba(255,255,255,.78);--ink:#fff;--blue:#a9c6ff;--red:#ffb4b4}
+.stats .stat{position:relative;overflow:hidden}
+.stats .stat::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#4f6df5,#6366f1)}
+.stats .stat:nth-child(2)::before{background:linear-gradient(90deg,#0ea5e9,#22d3ee)}
+.stats .stat:nth-child(3)::before{background:linear-gradient(90deg,#14b8a6,#10b981)}
+.stats .stat:nth-child(4)::before{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
+.stats .stat:nth-child(5)::before{background:linear-gradient(90deg,#8b5cf6,#a78bfa)}
+.stats .stat:nth-child(6)::before{background:linear-gradient(90deg,#10b981,#34d399)}
+.stats .stat:nth-child(7)::before{background:linear-gradient(90deg,#0ea5e9,#38bdf8)}
+.stats .stat:nth-child(8)::before{background:linear-gradient(90deg,#f59e0b,#f97316)}
+#levels .lvl:nth-child(1),#levels .lvl:nth-child(2){background:linear-gradient(135deg,rgba(16,185,129,.10),rgba(16,185,129,.02))}
+#levels .lvl:nth-child(3),#levels .lvl:nth-child(4){background:linear-gradient(135deg,rgba(239,68,68,.10),rgba(239,68,68,.02))}
+.more summary{background:linear-gradient(135deg,rgba(79,109,245,.10),rgba(124,58,237,.06));border-color:rgba(79,109,245,.22)}
+.btnrow .ghost{background:linear-gradient(180deg,#ffffff,rgba(79,109,245,.05));border-color:rgba(79,109,245,.20)}
 </style>
 </head>
 <body>
