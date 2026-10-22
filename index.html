@@ -60,7 +60,15 @@ button:active{transform:scale(.985)}
 .act:disabled{background:var(--card);color:var(--sub);font-weight:500;opacity:.6;box-shadow:none;transform:none}
 .ghost{background:var(--card);border:1px solid var(--line);color:var(--ink);min-height:42px;padding:0 14px;font-size:14px;font-weight:500}
 .ghost:active{background:var(--bg)}
-.gauge-box{margin:0 0 6px;padding:2px 4px;background:var(--card);border:1px solid var(--line);border-radius:14px}
+.hero{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:6px 12px;box-shadow:var(--shadow)}
+.hero-gauge{flex:1;min-width:0}
+.hero-price{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:0}
+.hero-price input{width:104px;font-size:26px;font-weight:800;letter-spacing:-.5px;text-align:right;padding:2px 4px;border:none;background:transparent;color:var(--ink)}
+.hero-price input:focus{background:var(--bg);box-shadow:0 0 0 3px rgba(59,108,246,.14);border-radius:8px}
+.hero-price span{font-size:10px;color:var(--sub)}
+.inputs-row{gap:6px}
+.inputs-row .field{min-width:0}
+.inputs-row input{padding:8px 7px;font-size:13px}
 table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:6px}
 th{font-size:11.5px;color:var(--sub);text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);font-weight:650;white-space:nowrap}
 td{padding:9px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
@@ -90,19 +98,25 @@ tbody tr:last-child td{border-bottom:none}
 <div class="wrap">
   <div class="banner" id="tip" style="display:none">建议添加到主屏幕：点 Safari 底部分享按钮 → 下滑选"添加到主屏幕"，以后一点就开。<b onclick="document.getElementById('tip').style.display='none'">✕</b></div>
 
-  <div class="gauge-box"><svg id="gauge" viewBox="0 0 360 56" style="width:100%;height:auto"></svg></div>
+  <div class="hero">
+    <div class="hero-gauge"><svg id="gauge" viewBox="0 0 360 56" style="width:100%;height:auto"></svg></div>
+    <div class="hero-price">
+      <input id="price" type="text" inputmode="decimal" value="42.45">
+      <span>股价</span>
+    </div>
+  </div>
 
-  <div class="row" style="margin:10px 0">
-    <div class="field"><label>股价</label><input id="price" type="text" inputmode="decimal" value="42.45"></div>
-    <div class="field"><label>BVPS</label><input id="bvps" type="text" inputmode="decimal" value="43.43"></div>
-    <div class="field"><label>DPS</label><input id="dps" type="text" inputmode="decimal" value="2.016"></div>
-    <div class="field"><label>成本价(元/股)</label><input id="cost" type="text" inputmode="decimal" placeholder="每股成本"></div>
-    <div class="field"><label>持股数</label><input id="sharesInput" type="text" inputmode="decimal" value="17900"></div>
-  </div>
-  <div class="row" style="align-items:center">
-    <button class="ghost" onclick="fetchQuote()" style="flex:1">⟳ 自动获取最新行情</button>
-    <div class="field" style="max-width:90px"><label>重置线</label><input id="rearm" type="text" inputmode="decimal" value="0.90"></div>
-  </div>
+  <details class="more" style="margin-top:8px">
+    <summary>⚙️ 参数 · BVPS / DPS / 成本价 / 持股数 / 重置线</summary>
+    <div class="row inputs-row" style="margin-top:10px">
+      <div class="field"><label>BVPS</label><input id="bvps" type="text" inputmode="decimal" value="43.43"></div>
+      <div class="field"><label>DPS</label><input id="dps" type="text" inputmode="decimal" value="2.016"></div>
+      <div class="field"><label>成本价</label><input id="cost" type="text" inputmode="decimal" placeholder="每股成本"></div>
+      <div class="field"><label>持股数</label><input id="sharesInput" type="text" inputmode="decimal" value="17900"></div>
+      <div class="field"><label>重置线</label><input id="rearm" type="text" inputmode="decimal" value="0.90"></div>
+    </div>
+    <button class="ghost" onclick="fetchQuote()" style="width:100%;margin-top:8px">⟳ 自动获取最新行情</button>
+  </details>
 
   <div class="stats">
     <div class="card stat"><div class="v num" id="total">—</div><div class="k">总资产</div></div>
@@ -349,9 +363,9 @@ function draw(c){
   const svg=$('gauge'),x0=15,x1=345,lo=0.7,hi=1.55,X=v=>x0+(v-lo)/(hi-lo)*(x1-x0);
   let g=`<line x1="${x0}" y1="24" x2="${x1}" y2="24" stroke="var(--line)" stroke-width="2"/>`;
   [[c.ra,'重置线','var(--sub)'],[S.PB_B1,S.PB_B1.toFixed(2),'var(--blue)'],[S.PB_B2,S.PB_B2.toFixed(2),'var(--blue)'],[S.PB_S1,S.PB_S1.toFixed(2),'var(--red)'],[S.PB_S2,S.PB_S2.toFixed(2),'var(--red)']].forEach(([v,lb,col])=>{
-    g+=`<line x1="${X(v)}" y1="14" x2="${X(v)}" y2="34" stroke="${col}" stroke-width="2"/><text x="${X(v)}" y="9" text-anchor="middle" font-size="8.5" fill="var(--sub)">${lb}</text>`;});
+    g+=`<line x1="${X(v)}" y1="14" x2="${X(v)}" y2="34" stroke="${col}" stroke-width="2"/><text x="${X(v)}" y="9" text-anchor="middle" font-size="11" fill="var(--sub)">${lb}</text>`;});
   const pc=Math.min(hi,Math.max(lo,c.pb));
-  g+=`<circle cx="${X(pc)}" cy="24" r="6.5" fill="var(--ink)"/><text x="${X(pc)}" y="51" text-anchor="middle" font-size="12.5" font-weight="600" fill="var(--ink)">${c.pb.toFixed(2)}</text>`;
+  g+=`<circle cx="${X(pc)}" cy="24" r="7" fill="var(--ink)"/><text x="${X(pc)}" y="51" text-anchor="middle" font-size="15" font-weight="600" fill="var(--ink)">${c.pb.toFixed(2)}</text>`;
   svg.innerHTML=g;
 }
 
