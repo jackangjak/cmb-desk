@@ -55,8 +55,7 @@ input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,1
 .dist{font-size:10px;color:var(--sub);font-weight:500}
 .lvl .act{width:100%;min-height:36px;padding:0 4px;font-size:12px;box-shadow:none;grid-area:auto}
 button{font:inherit;cursor:pointer;border:none;border-radius:12px;min-height:46px;font-size:15px;font-weight:650;transition:transform .06s ease,filter .15s ease;-webkit-appearance:none}
-button:active{transform:scale(.985)
-}
+button:active{transform:scale(.985)}
 .act{background:linear-gradient(135deg,var(--blue2),var(--blue));color:#fff;width:100%;box-shadow:0 6px 18px rgba(59,108,246,.28)}
 .act:disabled{background:var(--card);color:var(--sub);font-weight:500;opacity:.6;box-shadow:none;transform:none}
 .ghost{background:var(--card);border:1px solid var(--line);color:var(--ink);min-height:42px;padding:0 14px;font-size:14px;font-weight:500}
@@ -107,6 +106,12 @@ body{background:var(--bg-grad)}
 #levels .lvl:nth-child(3),#levels .lvl:nth-child(4){background:linear-gradient(135deg,rgba(239,68,68,.10),rgba(239,68,68,.02))}
 .more summary{background:linear-gradient(135deg,rgba(79,109,245,.10),rgba(124,58,237,.06));border-color:rgba(79,109,245,.22)}
 .btnrow .ghost{background:linear-gradient(180deg,#ffffff,rgba(79,109,245,.05));border-color:rgba(79,109,245,.20)}
+
+/* ===== 弹窗复选框：大号醒目样式 ===== */
+#mChk{appearance:none;-webkit-appearance:none;width:24px!important;height:24px;flex:none;border:2px solid var(--sub);border-radius:7px;background:var(--card);cursor:pointer;position:relative;transition:background .15s,border-color .15s;margin:0;padding:0;opacity:1}
+#mChk:checked{background:linear-gradient(135deg,var(--blue2),var(--blue));border-color:var(--blue);box-shadow:0 3px 10px rgba(59,108,246,.35)}
+#mChk:checked::after{content:'';position:absolute;left:7px;top:2px;width:6px;height:12px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+#mChkLbl{font-size:14.5px!important;color:var(--ink)!important;font-weight:600}
 @media(max-width:560px){
   .hero{flex-direction:column;align-items:stretch;gap:4px}
   .hero-price{align-self:flex-end}
@@ -479,7 +484,7 @@ function restore(){
 }
 function exportCSV(){
   if(!S.log.length){$('msg').textContent='暂无记录可导出';return;}
-  const head='\uFEFF日期,档位,方向,股数,价格,金额,PB\n';
+  const head='﻿日期,档位,方向,股数,价格,金额,PB\n';
   const rows=S.log.slice().reverse().map(r=>`${r.d},${r.lv},${r.dir},${r.qty},${(r.p||0).toFixed(2)},${r.amt},${(r.pb||0).toFixed(3)}`).join('\n');
   download('招行PB台账_'+new Date().toISOString().slice(0,10)+'.csv',head+rows,'text/csv;charset=utf-8');
   $('msg').textContent='✓ 台账已导出';
