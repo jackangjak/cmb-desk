@@ -478,7 +478,7 @@ function restore(){
 }
 function exportCSV(){
   if(!S.log.length){$('msg').textContent='暂无记录可导出';return;}
-  const head='\uFEFF日期,档位,方向,股数,价格,金额,PB\n';
+  const head='﻿日期,档位,方向,股数,价格,金额,PB\n';
   const rows=S.log.slice().reverse().map(r=>`${r.d},${r.lv},${r.dir},${r.qty},${(r.p||0).toFixed(2)},${r.amt},${(r.pb||0).toFixed(3)}`).join('\n');
   download('招行PB台账_'+new Date().toISOString().slice(0,10)+'.csv',head+rows,'text/csv;charset=utf-8');
   $('msg').textContent='✓ 台账已导出';
@@ -557,7 +557,7 @@ function ghInit(){
   if(c.token&&c.gist){ ghPull().then(ok=>{ if(ok)$('ghStatus').textContent='✓ 已从云端同步'; }).catch(()=>{ $('ghStatus').textContent='云端同步失败（检查令牌/网络）'; }); }
 }
 function resetAll(){
-  showModal('清空全部记录并恢复初始状态？',null,'持股17,900股、现金19,251.97元、四档重新武装。不可撤销。',(v)=>{
+  showModal('清空全部记录并恢复初始状态？',null,`恢复为：持股${DEF.shares.toLocaleString()}股、现金${DEF.cash.toLocaleString()}元、四档重新武装。当前数据将丢失，不可撤销。`,(v)=>{
     if(v===null)return;
     S=JSON.parse(JSON.stringify(DEF));
     fillInputs();ensureCostField();render(true);});
@@ -625,7 +625,7 @@ function showModal(title,defv,note,cb,chkLabel){
   const mi=document.getElementById('mInput');mi.value=defv;mi.style.display=defv===null?'none':'block';
   document.getElementById('mNote').textContent=note||'';
   const chk=document.getElementById('mChk');
-  if(chkLabel){document.getElementById('mChkRow').style.display='flex';document.getElementById('mChkLbl').textContent=chkLabel;chk.checked=true;}
+  if(chkLabel){document.getElementById('mChkRow').style.display='flex';document.getElementById('mChkLbl').textContent=chkLabel;chk.checked=false;}
   else{document.getElementById('mChkRow').style.display='none';chk.checked=false;}
   mCb=cb;document.getElementById('modal').style.display='flex';
   if(defv!==null)setTimeout(()=>{mi.focus();mi.select();},50);
