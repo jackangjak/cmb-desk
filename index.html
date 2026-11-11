@@ -40,10 +40,10 @@ input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,1
 .stat{text-align:center;padding:8px 3px}
 .stat .v{font-size:15px;font-weight:750;letter-spacing:-.3px}
 .stat .k{font-size:9.5px;color:var(--sub);margin-top:2px;font-weight:500}
-#levels{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.lvl{margin-bottom:0;display:flex;flex-direction:column;gap:5px;padding:9px 10px;border-left:3px solid var(--line)}
-#levels .lvl:nth-child(1),#levels .lvl:nth-child(2){border-left-color:var(--green)}
-#levels .lvl:nth-child(3),#levels .lvl:nth-child(4){border-left-color:var(--red)}
+#levels{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.lvl{margin-bottom:0;display:flex;flex-direction:column;gap:3px;padding:8px 4px;border-top:3px solid var(--line);border-left:none;align-items:center;text-align:center}
+#levels .lvl:nth-child(1),#levels .lvl:nth-child(2){border-top-color:var(--green)}
+#levels .lvl:nth-child(3),#levels .lvl:nth-child(4){border-top-color:var(--red)}
 .lvl-top{display:flex;align-items:center;justify-content:space-between;gap:4px}
 .lvl b{font-size:13px;font-weight:650}
 .chip{padding:2px 8px;border-radius:999px;font-size:10px;font-weight:650}
@@ -112,6 +112,19 @@ body{background:var(--bg-grad)}
 #mChk:checked{background:linear-gradient(135deg,var(--blue2),var(--blue));border-color:var(--blue);box-shadow:0 3px 10px rgba(59,108,246,.35)}
 #mChk:checked::after{content:'';position:absolute;left:7px;top:2px;width:6px;height:12px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
 #mChkLbl{font-size:14.5px!important;color:var(--ink)!important;font-weight:600}
+
+/* ===== 档位紧凑一排 + 触发高亮 ===== */
+.lvl .lvl-top{width:100%;justify-content:center;gap:5px}
+.lvl b{font-size:11px}
+.lvl .tprice{font-size:16px}
+.lvl .dist{font-size:9.5px;white-space:nowrap}
+.chip.hit{background:rgba(245,158,11,.18);color:var(--amber)}
+
+/* ===== 手动记一笔：方向切换 ===== */
+.seg{display:flex;gap:6px}
+.seg-btn{flex:1;min-height:38px;font-size:13px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--sub);font-weight:500;box-shadow:none}
+.seg-btn.on-buy{background:rgba(239,68,68,.12);color:var(--red);border-color:rgba(239,68,68,.55);font-weight:650}
+.seg-btn.on-sell{background:rgba(16,185,129,.12);color:var(--green);border-color:rgba(16,185,129,.55);font-weight:650}
 @media(max-width:560px){
   .hero{flex-direction:column;align-items:stretch;gap:4px}
   .hero-price{align-self:flex-end}
@@ -167,6 +180,24 @@ body{background:var(--bg-grad)}
   </div>
 
   <div id="levels"></div>
+
+  <details class="more" style="margin-top:8px">
+    <summary>✍️ 手动记一笔（买入 / 卖出）</summary>
+    <div class="card" style="margin-top:10px">
+      <div class="row inputs-row">
+        <div class="field" style="min-width:120px"><label>方向</label>
+          <div class="seg">
+            <button id="mtBuy" class="seg-btn on-buy" onclick="setMtDir('买')">买入</button>
+            <button id="mtSell" class="seg-btn" onclick="setMtDir('卖')">卖出</button>
+          </div>
+        </div>
+        <div class="field"><label>成交价（元）</label><input id="mtPrice" type="text" inputmode="decimal" placeholder="如 38.50"></div>
+        <div class="field"><label>股数</label><input id="mtQty" type="text" inputmode="numeric" placeholder="如 500"></div>
+      </div>
+      <button class="act" style="margin-top:10px" onclick="manualTrade()">记入台账</button>
+      <div class="note" style="margin-top:8px">手动记录按「成交价×股数」自动更新持股、资金池和成本；与档位无关，不影响档位武装状态。买入金额超过资金池时请先「入金」。</div>
+    </div>
+  </details>
 
   <div class="sect">交易台账</div>
   <div class="card">
@@ -305,14 +336,12 @@ function render(flush){
   const box=$('levels');box.innerHTML='';
   LV.forEach(L=>{
     const th=c.bv*S[L.key],armed=S.armed[L.id];
-    let can=false,qt='';
-    if(L.dir==='卖'){can=armed&&((L.id==='s1'&&fS1)||(L.id==='s2'&&fS2));qt=fmt(L.qty)+'股';}
-    else{const a=Math.floor(S.cash*L.frac/c.p/100)*100;can=armed&&((L.id==='b1'&&fB1)||(L.id==='b2'&&fB2))&&a>=100;qt=a>=100?fmt(a)+'股':'资金不足';}
+    const hit=(L.id==='s1'&&fS1)||(L.id==='s2'&&fS2)||(L.id==='b1'&&fB1)||(L.id==='b2'&&fB2);
     const d=(th-c.p)/c.p*100;
     const el=document.createElement('div');el.className='card lvl';
-    el.innerHTML=`<div class="lvl-top"><b>${L.name} ${L.dir==='卖'?'卖出':'买入'}</b><span class="chip ${armed?'on':'off'}">${armed?'武装':'冷却'}</span></div>
-    <div class="lvl-mid"><span class="tprice num">${th.toFixed(2)}</span><span class="dist">${d>0?'距'+d.toFixed(1)+'%':'过'+Math.abs(d).toFixed(1)+'%'}</span></div>
-    <button class="act" ${can?'':'disabled'} onclick="trade('${L.id}')">${can?'⚡ '+qt:(armed?'未触发':'冷却')}</button>`;
+    el.innerHTML=`<div class="lvl-top"><b>${L.name}</b><span class="chip ${hit?'hit':(armed?'on':'off')}">${hit?'⚡触发':(armed?'武装':'冷却')}</span></div>
+    <div class="tprice num">${th.toFixed(2)}</div>
+    <div class="dist">PB ${S[L.key].toFixed(2)} · ${d>0?'距':'过'}${Math.abs(d).toFixed(1)}%</div>`;
     box.appendChild(el);
   });
   draw(c);renderLog();save(flush);
@@ -392,6 +421,30 @@ function setCashTarget(){
     S.log.unshift({d:new Date().toLocaleDateString('zh-CN'),lv:'资金调整',dir:amt>=0?'入金':'出金',qty:'',p:'',amt:Math.round(Math.abs(amt)),pb:+c.pb.toFixed(3),id:'cash'});
     render(true);
   });
+}
+// ===== 手动记一笔 =====
+let MTDIR='买';
+function setMtDir(d){
+  MTDIR=d;
+  $('mtBuy').className='seg-btn'+(d==='买'?' on-buy':'');
+  $('mtSell').className='seg-btn'+(d==='卖'?' on-sell':'');
+}
+function manualTrade(){
+  const p=parseFloat($('mtPrice').value),qty=Math.floor(parseFloat($('mtQty').value));
+  if(!(p>0)){$('msg').textContent='请输入有效的成交价';return;}
+  if(!(qty>0)){$('msg').textContent='请输入有效的股数';return;}
+  const amt=p*qty;
+  if(MTDIR==='买'&&amt>S.cash){$('msg').textContent='资金池不足（当前 '+money(S.cash)+'），请先入金';return;}
+  if(MTDIR==='卖'&&qty>S.shares){$('msg').textContent='卖出股数超过当前持股 '+fmt(S.shares)+' 股';return;}
+  const cd=MTDIR==='买'?amt:-((S.cost||0)/S.shares*qty);
+  if(MTDIR==='买'){S.shares+=qty;S.cash-=amt;S.cost=(S.cost||0)+amt;}
+  else{S.shares-=qty;S.cash+=amt;S.cost=(S.cost||0)+cd;}
+  ensureCostField();
+  const pb=p/(parseFloat($('bvps').value)||1);
+  S.log.unshift({d:new Date().toLocaleDateString('zh-CN'),lv:'手动',dir:MTDIR,qty:qty,p:+p.toFixed(2),amt:Math.round(amt),pb:+pb.toFixed(3),id:'manual',cd:cd});
+  $('mtPrice').value='';$('mtQty').value='';
+  render(true);
+  $('msg').textContent='✓ 已记入：'+MTDIR+' '+fmt(qty)+'股 @ '+p.toFixed(2);
 }
 function undoLast(){
   if(!S.log.length){$('msg').textContent='没有可撤销的记录';return;}
