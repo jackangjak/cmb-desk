@@ -125,6 +125,7 @@ body{background:var(--bg-grad)}
 .seg-btn{flex:1;min-height:38px;font-size:13px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--sub);font-weight:500;box-shadow:none}
 .seg-btn.on-buy{background:rgba(239,68,68,.12);color:var(--red);border-color:rgba(239,68,68,.55);font-weight:650}
 .seg-btn.on-sell{background:rgba(16,185,129,.12);color:var(--green);border-color:rgba(16,185,129,.55);font-weight:650}
+#mtRes{font-size:14.5px;font-weight:650;margin-top:8px;min-height:18px}
 @media(max-width:560px){
   .hero{flex-direction:column;align-items:stretch;gap:4px}
   .hero-price{align-self:flex-end}
@@ -168,7 +169,7 @@ body{background:var(--bg-grad)}
     <div class="card stat"><div class="v num" id="total">—</div><div class="k">总资产</div></div>
     <div class="card stat"><div class="v num" id="mktval">—</div><div class="k">持仓市值</div></div>
     <div class="card stat"><div class="v num" id="cash">90.0万</div><div class="k">资金池</div></div>
-    <div class="card stat"><div class="v num" id="yld">4.75%</div><div class="k">股息率</div></div>
+    <div class="card stat"><div class="v num" id="yld">4.75%</</div><div class="k">股息率</div></div>
     <div class="card stat"><div class="v num" id="principal">—</div><div class="k">本金</div></div>
     <div class="card stat"><div class="v num" id="fpnl">—</div><div class="k">收益</div></div>
     <div class="card stat"><div class="v num" id="ret">—</div><div class="k">收益率</div></div>
@@ -195,7 +196,8 @@ body{background:var(--bg-grad)}
         <div class="field"><label>股数</label><input id="mtQty" type="text" inputmode="numeric" placeholder="如 500"></div>
       </div>
       <button class="act" style="margin-top:10px" onclick="manualTrade()">记入台账</button>
-      <div class="note" style="margin-top:8px">手动记录按「成交价×股数」自动更新持股、资金池和成本；与档位无关，不影响档位武装状态。买入金额超过资金池时请先「入金」。</div>
+      <div id="mtRes"></div>
+      <div class="note" style="margin-top:8px">手动记录按「成交价×股数」自动更新持股、资金池和成本；与档位无关，不影响档位武装状态。如实记录即可，资金池不足时会记为负数并提示补入金。</div>
     </div>
   </details>
 
@@ -430,12 +432,12 @@ function setMtDir(d){
   $('mtSell').className='seg-btn'+(d==='卖'?' on-sell':'');
 }
 function manualTrade(){
-  const p=parseFloat($('mtPrice').value),qty=Math.floor(parseFloat($('mtQty').value));
-  if(!(p>0)){$('msg').textContent='请输入有效的成交价';return;}
-  if(!(qty>0)){$('msg').textContent='请输入有效的股数';return;}
+  const p=parseFloat($('mtPrice').value),qty=Math.floor(parseFloat($('mtQty').value)),r=$('mtRes');
+  const fail=t=>{r.textContent='⚠ '+t;r.style.color='var(--amber)';$('msg').textContent='⚠ '+t;};
+  if(!(p>0)){fail('请输入有效的成交价');return;}
+  if(!(qty>0)){fail('请输入有效的股数');return;}
   const amt=p*qty;
-  if(MTDIR==='买'&&amt>S.cash){$('msg').textContent='资金池不足（当前 '+money(S.cash)+'），请先入金';return;}
-  if(MTDIR==='卖'&&qty>S.shares){$('msg').textContent='卖出股数超过当前持股 '+fmt(S.shares)+' 股';return;}
+  if(MTDIR==='卖'&&qty>S.shares){fail('卖出股数超过当前持股 '+fmt(S.shares)+' 股');return;}
   const cd=MTDIR==='买'?amt:-((S.cost||0)/S.shares*qty);
   if(MTDIR==='买'){S.shares+=qty;S.cash-=amt;S.cost=(S.cost||0)+amt;}
   else{S.shares-=qty;S.cash+=amt;S.cost=(S.cost||0)+cd;}
@@ -444,13 +446,15 @@ function manualTrade(){
   S.log.unshift({d:new Date().toLocaleDateString('zh-CN'),lv:'手动',dir:MTDIR,qty:qty,p:+p.toFixed(2),amt:Math.round(amt),pb:+pb.toFixed(3),id:'manual',cd:cd});
   $('mtPrice').value='';$('mtQty').value='';
   render(true);
-  $('msg').textContent='✓ 已记入：'+MTDIR+' '+fmt(qty)+'股 @ '+p.toFixed(2);
+  r.textContent='✓ 已记入：'+MTDIR+' '+fmt(qty)+'股 @ '+p.toFixed(2)+(S.cash<0?'（资金池已为负 '+money(S.cash)+'，请入金补齐）':'');
+  r.style.color=S.cash<0?'var(--amber)':'var(--green)';
+  $('msg').textContent=r.textContent;
 }
 function undoLast(){
   if(!S.log.length){$('msg').textContent='没有可撤销的记录';return;}
   const r=S.log.shift();
-  if(r.dir==='卖'){S.shares+=r.qty;S.cash-=r.amt;if(r.cd){S.cost=(S.cost||0)-r.cd;ensureCostField();}if(r.id)S.armed[r.id]=1;}
-  else if(r.dir==='买'){S.shares-=r.qty;S.cash+=r.amt;if(r.cd){S.cost=(S.cost||0)-r.cd;ensureCostField();}if(r.id)S.armed[r.id]=1;}
+  if(r.dir==='卖'){S.shares+=r.qty;S.cash-=r.amt;if(r.cd){S.cost=(S.cost||0)-r.cd;ensureCostField();}if(r.id&&LV.some(x=>x.id===r.id))S.armed[r.id]=1;}
+  else if(r.dir==='买'){S.shares-=r.qty;S.cash+=r.amt;if(r.cd){S.cost=(S.cost||0)-r.cd;ensureCostField();}if(r.id&&LV.some(x=>x.id===r.id))S.armed[r.id]=1;}
   else if(r.dir==='分红'){S.cash-=r.amt;if(r.cd){S.cost=(S.cost||0)-r.cd;ensureCostField();}}
   else if(r.dir==='入金'){S.cash-=r.amt;}
   else if(r.dir==='出金'){S.cash+=r.amt;}
