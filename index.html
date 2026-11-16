@@ -221,8 +221,8 @@ select{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:1
 
   <div class="sect">交易台账</div>
   <div class="card">
-    <table><thead><tr><th>日期</th><th>档位</th><th>方向</th><th>股数</th><th>价格</th><th>金额</th><th>PB</th></tr></thead>
-    <tbody id="log"><tr><td colspan="7" class="note">暂无记录</td></tr></tbody></table>
+    <table><thead><tr><th>日期</th><th>档位</th><th>方向</th><th>股数</th><th>价格</th><th>金额</th></tr></thead>
+    <tbody id="log"><tr><td colspan="6" class="note">暂无记录</td></tr></tbody></table>
   </div>
 
   <details class="more" style="margin-top:8px">
@@ -548,7 +548,7 @@ function undoLast(){
 function renderLog(){
   const t=$('log');
   if(!S.log.length){t.innerHTML='<tr><td colspan="7" class="note">暂无记录</td></tr>';return;}
-  t.innerHTML=S.log.slice(0,50).map(r=>`<tr><td>${r.d}</td><td>${r.lv}</td><td>${r.dir}</td><td class="num">${typeof r.qty==='number'?fmt(r.qty):(r.qty||'—')}</td><td class="num">${r.p?(+r.p).toFixed(2):'—'}</td><td class="num">${fmt(r.amt)}</td><td class="num">${(r.pb||0).toFixed(3)}</td></tr>`).join('');
+  t.innerHTML=S.log.slice(0,50).map(r=>`<tr><td>${r.d}</td><td>${r.lv}</td><td>${r.dir}</td><td class="num">${typeof r.qty==='number'?fmt(r.qty):(r.qty||'—')}</td><td class="num">${r.p?(+r.p).toFixed(2):'—'}</td><td class="num">${fmt(r.amt)}</td></tr>`).join('');
 }
 
 function draw(c){
