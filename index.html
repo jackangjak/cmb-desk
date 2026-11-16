@@ -527,7 +527,7 @@ function manualTradeInner(){
     const amt=parseFloat($('rpAmt').value),rate=parseFloat($('rpRate').value),days=parseInt($('rpTerm').value,10);
     if(!(amt>0)){fail('请输入有效的出借金额');return;}
     if(!(rate>0)){fail('请输入有效的年化利率');return;}
-    if(!RPFEE[days]){fail('请选择期限');return;}
+    if(!RPCode[days]){fail('请选择期限');return;}
     const cc=repoCalc(amt,rate,days),ts=Date.now(),due=cc.usable,rid='rp'+ts;
     S.cash-=amt;
     S.repo.push({id:rid,ts:ts,days:days,occupy:cc.occupy,amt:amt,rate:rate,fee:cc.fee,interest:cc.interest,net:cc.net,due:due,settled:0});
