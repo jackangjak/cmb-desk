@@ -494,6 +494,11 @@ function setMtDir(d){
 function manualTrade(){
   const r=$('mtRes');
   const fail=t=>{r.textContent='⚠ '+t;r.style.color='var(--amber)';$('msg').textContent='⚠ '+t;};
+  try{manualTradeInner();}catch(e){fail('记入失败：'+(e&&e.message||e));}
+}
+function manualTradeInner(){
+  const r=$('mtRes');
+  const fail=t=>{r.textContent='⚠ '+t;r.style.color='var(--amber)';$('msg').textContent='⚠ '+t;};
   if(MTDIR==='逆回购'){
     const amt=parseFloat($('rpAmt').value),rate=parseFloat($('rpRate').value),days=parseInt($('rpTerm').value,10);
     if(!(amt>0)){fail('请输入有效的出借金额');return;}
@@ -604,7 +609,7 @@ function applyRestore(s){
   try{
     let o;
     try{o=JSON.parse(s);}catch(e){o=JSON.parse(decodeURIComponent(escape(atob(s.trim()))));}
-    if(o&&o.armed){S=o;fillInputs();ensureCostField();render(true);return true;}
+    if(o&&o.armed){S=o;if(!S.repo)S.repo=[];fillInputs();ensureCostField();render(true);return true;}
   }catch(e){}
   return false;
 }
@@ -647,7 +652,7 @@ async function ghPull(){
   const j=await r.json(); const f=j.files&&j.files['cmb-pb-desk.json'];
   if(!f||!f.content) return false;
   const o=JSON.parse(f.content);
-  if(o&&o.armed){S=o;fillInputs();ensureCostField();render(true);return true;}
+  if(o&&o.armed){S=o;if(!S.repo)S.repo=[];fillInputs();ensureCostField();render(true);return true;}
   return false;
 }
 async function ghPush(){
@@ -716,7 +721,7 @@ setStoreMode();
   try{
     if(location.hash.length>20){
       const o=JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(1)))));
-      if(o&&o.armed){S=o;fillInputs();ensureCostField();render(true);}
+      if(o&&o.armed){S=o;if(!S.repo)S.repo=[];fillInputs();ensureCostField();render(true);}
     }
   }catch(e){}
 })();
@@ -733,7 +738,7 @@ setStoreMode();
     }).then(o=>{
       if(o&&o.__static){window.__server=false;$('msg').textContent='';setStoreMode();return;}
       window.__server=true;
-      if(o&&o.armed){S=o;fillInputs();ensureCostField();render(true);$('msg').textContent='✓ 已加载磁盘数据';}
+      if(o&&o.armed){S=o;if(!S.repo)S.repo=[];fillInputs();ensureCostField();render(true);$('msg').textContent='✓ 已加载磁盘数据';}
       setStoreMode();
     }).catch(()=>{
       if(tries<20){setTimeout(attempt,300);}
