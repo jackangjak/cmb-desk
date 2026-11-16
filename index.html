@@ -127,11 +127,21 @@ body{background:var(--bg-grad)}
 .seg-btn.on-sell{background:rgba(16,185,129,.12);color:var(--green);border-color:rgba(16,185,129,.55);font-weight:650}
 .seg-btn.on-repo{background:rgba(139,92,246,.12);color:#8b5cf6;border-color:rgba(139,92,246,.55);font-weight:650}
 select{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:12px;font-size:16px;font-weight:500;background:var(--card);color:var(--ink);-webkit-appearance:none;appearance:none}
-.inputs-row select{padding:8px 7px;font-size:13px}
+.inputs-row select{padding:8px 7px;font-size:13px;min-width:0}
+#rpTerm{min-width:0;width:100%}
 #mtRes{font-size:14.5px;font-weight:650;margin-top:8px;min-height:18px}
 @media(max-width:560px){
   .hero{flex-direction:column;align-items:stretch;gap:4px}
   .hero-price{align-self:flex-end}
+  /* 手动记一笔：窄屏四个字段挤一行 */
+  .inputs-row .field{min-width:0;flex:1 1 0}
+  .inputs-row .field:first-child{flex:1.2 1 0}
+  .inputs-row #fRpRate{flex:0 0 84px}
+  .inputs-row #fRpRate .ghost{display:none}
+  .inputs-row #fRpTerm{flex:0 0 74px;max-width:74px}
+  .seg-btn{min-height:34px;font-size:12px;padding:0 2px}
+  .inputs-row label{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .inputs-row input,.inputs-row select{padding:8px 5px;font-size:12px}
 }
 </style>
 </head>
@@ -187,7 +197,7 @@ select{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:1
   <div id="repoBar" class="banner" style="display:none;margin-top:8px"></div>
 
   <details class="more" style="margin-top:8px">
-    <summary>✍️ 手动记一笔（买入 / 卖出）</summary>
+    <summary>✍️ 手动记一笔（买入 / 卖出 / 逆回购）</summary>
     <div class="card" style="margin-top:10px">
       <div class="row inputs-row">
         <div class="field" style="min-width:120px"><label>方向</label>
@@ -200,12 +210,12 @@ select{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:1
         <div class="field" id="fPrice"><label>成交价（元）</label><input id="mtPrice" type="text" inputmode="decimal" placeholder="如 38.50"></div>
         <div class="field" id="fQty"><label>股数</label><input id="mtQty" type="text" inputmode="numeric" placeholder="如 500"></div>
         <div class="field hide" id="fRpAmt"><label>出借金额（元）</label><input id="rpAmt" type="text" inputmode="decimal" placeholder="如 50000"></div>
-        <div class="field hide" id="fRpRate"><label>年化利率（%）</label><input id="rpRate" type="text" inputmode="decimal" placeholder="如 2.15"></div>
-        <div class="field hide" id="fRpTerm" style="max-width:104px"><label>期限</label><select id="rpTerm"><option value="1">1天</option><option value="7">7天</option><option value="2">2天</option><option value="3">3天</option><option value="4">4天</option><option value="14">14天</option><option value="28">28天</option><option value="91">91天</option><option value="182">182天</option></select></div>
+        <div class="field hide" id="fRpRate"><label>年化利率（%）</label><input id="rpRate" type="text" inputmode="decimal" placeholder="如 2.15"><button class="ghost" style="min-height:30px;font-size:12px;padding:0 8px;margin-top:2px" onclick="fetchRpRates()">⟳ 抓利率</button></div>
+        <div class="field hide" id="fRpTerm" style="max-width:104px"><label>期限</label><select id="rpTerm"><option value="1">GC001 · 1天</option><option value="7">GC007 · 7天</option><option value="2">GC002 · 2天</option><option value="3">GC003 · 3天</option><option value="4">GC004 · 4天</option><option value="14">GC014 · 14天</option><option value="28">GC028 · 28天</option><option value="91">GC091 · 91天</option><option value="182">GC182 · 182天</option></select></div>
       </div>
       <button class="act" style="margin-top:10px" onclick="manualTrade()">记入台账</button>
       <div id="mtRes"></div>
-      <div class="note" style="margin-top:8px">手动记录按「成交价×股数」自动更新持股、资金池和成本；逆回购按「金额×年化利率×期限」计息（期限按交易日计算、自动跳过周末，手续费按标准自动扣除），买入即占用资金池，到期本息自动回池。均与档位无关，不影响档位武装状态。如实记录即可，资金池不足时会记为负数并提示补入金。</div>
+      <div class="note" style="margin-top:8px">手动记录按「成交价×股数」自动更新持股、资金池和成本；逆回购为沪市 GC 品种，利率可点「抓取沪市利率」自动获取（也可手填）；按「金额×年化利率×期限」计息（期限按交易日计算、自动跳过周末，手续费按标准自动扣除），买入即占用资金池，到期本息自动回池。均与档位无关，不影响档位武装状态。如实记录即可，资金池不足时会记为负数并提示补入金。</div>
     </div>
   </details>
 
@@ -440,6 +450,21 @@ function setCashTarget(){
 }
 // ===== 国债逆回购 =====
 const RPFEE={1:0.00001,2:0.00002,3:0.00003,4:0.00004,7:0.00005,14:0.0001,28:0.0002,91:0.0003,182:0.0003};
+const RPCode={1:'204001',2:'204002',3:'204003',4:'204004',7:'204007',14:'204014',28:'204028',91:'204091',182:'204182'};
+let RPRates={};
+async function fetchRpRates(){
+  try{
+    const codes=Object.values(RPCode).map(c=>'sh'+c).join(',');
+    const t=await (await fetch('https://qt.gtimg.cn/q='+codes)).text();
+    t.split(';').forEach(seg=>{const m=/v_(sh\d+)="([^"]*)"/.exec(seg);if(!m)return;
+      const r=parseFloat(m[2].split('~')[3]);
+      const day=Object.keys(RPCode).find(k=>RPCode[k]===m[1].slice(2));
+      if(day&&r>0)RPRates[day]=r;});
+    const d=$('rpTerm').value;
+    if(RPRates[d])$('rpRate').value=RPRates[d].toFixed(3);
+    $('msg').textContent='✓ 沪市逆回购利率已更新 '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})+'（GC001 '+((RPRates[1]||0).toFixed(3))+'%）';
+  }catch(e){$('msg').textContent='逆回购利率获取失败，请手动输入';}
+}
 function addBizDays(ts,n){const d=new Date(ts);let a=0;while(a<n){d.setDate(d.getDate()+1);const w=d.getDay();if(w!==0&&w!==6)a++;}return d.getTime();}
 function repoCalc(amt,rate,days){const fee=Math.round(amt*RPFEE[days]*100)/100;const interest=Math.round(amt*rate/100*days/365*100)/100;return{fee:fee,interest:interest,net:Math.round((interest-fee)*100)/100};}
 function repoFrozen(){return S.repo.filter(x=>!x.settled).reduce((a,b)=>a+b.amt,0);}
@@ -459,6 +484,7 @@ function setMtDir(d){
   $('mtSell').className='seg-btn'+(d==='卖'?' on-sell':'');
   $('mtRepo').className='seg-btn'+(d==='逆回购'?' on-repo':'');
   const rp=(d==='逆回购');
+  if(rp)fetchRpRates();
   $('fPrice').classList.toggle('hide',rp);
   $('fQty').classList.toggle('hide',rp);
   $('fRpAmt').classList.toggle('hide',!rp);
@@ -594,7 +620,7 @@ function restore(){
 }
 function exportCSV(){
   if(!S.log.length){$('msg').textContent='暂无记录可导出';return;}
-  const head='﻿日期,档位,方向,股数,价格,金额,PB\n';
+  const head='\uFEFF日期,档位,方向,股数,价格,金额,PB\n';
   const rows=S.log.slice().reverse().map(r=>`${r.d},${r.lv},${r.dir},${r.qty},${(r.p||0).toFixed(2)},${r.amt},${(r.pb||0).toFixed(3)}`).join('\n');
   download('招行PB台账_'+new Date().toISOString().slice(0,10)+'.csv',head+rows,'text/csv;charset=utf-8');
   $('msg').textContent='✓ 台账已导出';
@@ -680,6 +706,7 @@ function resetAll(){
 }
 ['price','bvps','dps','rearm','cost'].forEach(id=>$(id).addEventListener('input',()=>render()));
 $('sharesInput').addEventListener('input',()=>{S.shares=Math.max(0,Math.floor(parseFloat($('sharesInput').value)||0));render();});
+$('rpTerm').addEventListener('change',()=>{const d=$('rpTerm').value;if(RPRates[d])$('rpRate').value=RPRates[d].toFixed(3);});
 ensureCostField();
 $('sharesInput').value=S.shares;
 render();
