@@ -215,7 +215,7 @@ select{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:1
       </div>
       <button class="act" style="margin-top:10px" onclick="manualTrade()">记入台账</button>
       <div id="mtRes"></div>
-      <div class="note" style="margin-top:8px">手动记录按「成交价×股数」自动更新持股、资金池和成本；逆回购为沪市 GC 品种，利率可点「抓取沪市利率」自动获取（也可手填）；按「金额×年化利率×期限」计息（期限按交易日计算、自动跳过周末，手续费按标准自动扣除），买入即占用资金池，到期本息自动回池。均与档位无关，不影响档位武装状态。如实记录即可，资金池不足时会记为负数并提示补入金。</div>
+      <div class="note" style="margin-top:8px">手动记录按「成交价×股数」自动更新持股、资金池和成本；逆回购为沪市 GC 品种，利率可点「抓取沪市利率」自动获取（也可手填）；按「金额×年化利率×期限」计息（期限按交易日计算、自动跳过周末，手续费按标准自动扣除），买入即占用资金池，持有期内收益按日自动计提进资金池，到期本金自动回池。均与档位无关，不影响档位武装状态。如实记录即可，资金池不足时会记为负数并提示补入金。</div>
     </div>
   </details>
 
@@ -259,7 +259,7 @@ select{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:1
 
     <div class="note">
       规则：卖出 1.00/1.15（需股息率&lt;5%）· 回补 0.85/0.80 · PB≤重置线0.90→卖出档重新武装，PB≥重置线0.90→回补档重新武装 · 底仓14,000股不卖。<br>
-      「分红到账」会加现金并摊薄持仓成本；「资金调整/设资金池」可入金出金；误操作点「撤销上一笔」。本金=成本价×持股+资金池；收益=市值−持仓成本（持仓成本=成本价×持股）；收益率=收益÷本金；持仓盈亏率=收益÷持仓成本。股价/BVPS/DPS 打开时自动抓取。逆回购按交易日历占款计息（跳周末），到期自动本息回资金池，可在「撤销上一笔」中回退。
+      「分红到账」会加现金并摊薄持仓成本；「资金调整/设资金池」可入金出金；误操作点「撤销上一笔」。本金=成本价×持股+资金池；收益=市值−持仓成本（持仓成本=成本价×持股）；收益率=收益÷本金；持仓盈亏率=收益÷持仓成本。股价/BVPS/DPS 打开时自动抓取。逆回购按交易日历占款计息（跳周末），持有期内收益按时间比例逐日计提进资金池（页面打开时每 60 秒结算一次），到期本金与尾差自动回池，可在「撤销上一笔」中回退。
     </div>
     <div class="note" id="storeMode"></div>
   </details>
@@ -366,9 +366,9 @@ function render(flush){
     box.appendChild(el);
   });
   const rb=$('repoBar'),act=S.repo.filter(x=>!x.settled);
-  if(act.length){const fr=act.reduce((a,b)=>a+b.amt,0),net=act.reduce((a,b)=>a+b.net,0),near=Math.min.apply(null,act.map(x=>x.due));
+  if(act.length){const fr=act.reduce((a,b)=>a+b.amt,0),net=act.reduce((a,b)=>a+b.net,0),accr=act.reduce((a,b)=>a+(b.accrued||0),0),near=Math.min.apply(null,act.map(x=>x.due));
     rb.style.display='block';
-    rb.innerHTML='🔄 在途逆回购 <b>'+act.length+'</b> 笔 · 占用 <b>'+money(fr)+'</b> · 预计净收益 <b style="color:var(--red)">+'+net.toFixed(2)+'元</b> · 最近到期 '+new Date(near).toLocaleDateString('zh-CN',{month:'numeric',day:'numeric'});
+    rb.innerHTML='🔄 在途逆回购 <b>'+act.length+'</b> 笔 · 占用 <b>'+money(fr)+'</b> · 净收益 <b style="color:var(--red)">+'+net.toFixed(2)+'元</b>（已计提 +'+accr.toFixed(2)+'） · 最近到期 '+new Date(near).toLocaleDateString('zh-CN',{month:'numeric',day:'numeric'});
   }else{rb.style.display='none';}
   draw(c);renderLog();save(flush);
 }
@@ -468,13 +468,27 @@ async function fetchRpRates(){
 function addBizDays(ts,n){const d=new Date(ts);let a=0;while(a<n){d.setDate(d.getDate()+1);const w=d.getDay();if(w!==0&&w!==6)a++;}return d.getTime();}
 function repoCalc(amt,rate,days){const fee=Math.round(amt*RPFEE[days]*100)/100;const interest=Math.round(amt*rate/100*days/365*100)/100;return{fee:fee,interest:interest,net:Math.round((interest-fee)*100)/100};}
 function repoFrozen(){return S.repo.filter(x=>!x.settled).reduce((a,b)=>a+b.amt,0);}
+function repoAccrued(){return S.repo.filter(x=>!x.settled).reduce((a,b)=>a+(b.accrued||0),0);}
+// 逆回购计提+到期结算：持有期内收益按时间比例逐日计入资金池，到期本金+剩余尾差回池
 function repoSettle(){
-  const now=Date.now();let n=0,earn=0;
-  S.repo.forEach(r=>{if(!r.settled&&now>=r.due){r.settled=1;n++;earn+=r.net;
-    const repay=Math.round((r.amt+r.net)*100)/100;
-    S.cash+=repay;
-    S.log.unshift({d:new Date().toLocaleDateString('zh-CN'),lv:'逆回购到期',dir:'逆回购到期',qty:'',p:'',amt:repay,pb:0,id:'rpdue',rid:r.id});}});
-  if(n){render(true);$('msg').textContent='✓ 逆回购到期 '+n+' 笔，本息已回资金池，净收益 +'+earn.toFixed(2)+' 元';}
+  const now=Date.now();let changed=false,matured=0,maturedNet=0,accruedToday=0;
+  S.repo.forEach(r=>{
+    if(r.settled)return;
+    if(!r.accrued)r.accrued=0;
+    if(now>=r.due){
+      const repay=Math.round((r.amt+r.net-r.accrued)*100)/100;
+      S.cash+=repay;r.settled=1;changed=true;matured++;maturedNet+=r.net;
+      S.log.unshift({d:new Date().toLocaleDateString('zh-CN'),lv:'逆回购到期',dir:'逆回购到期',qty:'',p:'',amt:Math.round((r.amt+r.net)*100)/100,pb:0,id:'rpdue',rid:r.id});
+    }else{
+      const span=Math.max(1,r.due-r.ts);
+      const target=Math.round(r.net*Math.min(1,(now-r.ts)/span)*100)/100;
+      const add=Math.round((target-r.accrued)*100)/100;
+      if(add>0){S.cash+=add;r.accrued=Math.round((r.accrued+add)*100)/100;changed=true;accruedToday+=add;}
+    }
+  });
+  if(matured){$('msg').textContent='✓ 逆回购到期 '+matured+' 笔，本息已回资金池，净收益 +'+maturedNet.toFixed(2)+' 元';}
+  else if(accruedToday>0){$('msg').textContent='✓ 逆回购收益已计提 +'+accruedToday.toFixed(2)+' 元入资金池';}
+  if(changed)render(true);
 }
 // ===== 手动记一笔 =====
 let MTDIR='买';
@@ -535,8 +549,8 @@ function manualTradeInner(){
 function undoLast(){
   if(!S.log.length){$('msg').textContent='没有可撤销的记录';return;}
   const r=S.log.shift();
-  if(r.dir==='逆回购'){S.cash+=r.amt;S.repo=S.repo.filter(x=>x.id!==r.rid);}
-  else if(r.dir==='逆回购到期'){S.cash-=r.amt;const rp=S.repo.find(x=>x.id===r.rid);if(rp)rp.settled=0;}
+  if(r.dir==='逆回购'){const rp=S.repo.find(x=>x.id===r.rid);S.cash+=r.amt-(rp?rp.accrued||0:0);S.repo=S.repo.filter(x=>x.id!==r.rid);}
+  else if(r.dir==='逆回购到期'){const rp=S.repo.find(x=>x.id===r.rid);const acc=rp?rp.accrued||0:0;S.cash=Math.round((S.cash-(r.amt-acc))*100)/100;if(rp){rp.settled=0;rp.accrued=acc;}}
   else if(r.dir==='卖'){S.shares+=r.qty;S.cash-=r.amt;if(r.cd){S.cost=(S.cost||0)-r.cd;ensureCostField();}if(r.id&&LV.some(x=>x.id===r.id))S.armed[r.id]=1;}
   else if(r.dir==='买'){S.shares-=r.qty;S.cash+=r.amt;if(r.cd){S.cost=(S.cost||0)-r.cd;ensureCostField();}if(r.id&&LV.some(x=>x.id===r.id))S.armed[r.id]=1;}
   else if(r.dir==='分红'){S.cash-=r.amt;if(r.cd){S.cost=(S.cost||0)-r.cd;ensureCostField();}}
